@@ -4,7 +4,6 @@ import (
 	"Distributed/P2PClient/model"
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"math/rand"
 	"strconv"
@@ -70,15 +69,34 @@ func DecodeResponse(reply string) (model.Response, error) {
 	return response, nil
 }
 
-// StoreInRT - Stores the joined nodes in Routing table
-func StoreInRT(node model.Node) error {
+// DecodeRequest - Decodes the response
+func DecodeRequest(reply string) (model.Response, error) {
+	splittedReply := strings.Split(reply, " ")
 
-	RouteTable.Nodes = append(RouteTable.Nodes, node)
-
-	if len(RouteTable.Nodes) > 0 {
-		fmt.Println(RouteTable.Nodes[0].Ip + ":" + RouteTable.Nodes[0].Port)
+	response := model.Response{}
+	response.Length = splittedReply[0]
+	response.Code = splittedReply[1]
+	for i := 2; i < len(splittedReply); i++ {
+		response.Ips = append(response.Ips, splittedReply[i])
 	}
-	return nil
+
+	return response, nil
+}
+
+// StoreInRT - Stores the joined nodes in Routing table
+func StoreInRT(node model.Node) {
+	RouteTable.Nodes = append(RouteTable.Nodes, node)
+}
+
+// RemoveFromRT - Removes stored nodes in Routing table
+func RemoveFromRT(node model.Node) {
+	newRT := model.RouteTable{}
+	for _, n := range RouteTable.Nodes {
+		if n.Ip != node.Ip && n.Port != node.Port {
+			newRT.Nodes = append(newRT.Nodes, n)
+		}
+	}
+	RouteTable.Nodes = newRT.Nodes
 }
 
 // RandomPeer - Select random peers

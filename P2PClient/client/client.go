@@ -4,6 +4,7 @@ import (
 	"Distributed/P2PClient/model"
 	"Distributed/P2PClient/util"
 	"fmt"
+	"log"
 	"net"
 	"strings"
 )
@@ -11,15 +12,15 @@ import (
 var conn *net.UDPConn
 var peerConn *net.UDPConn
 
-// CreateConnection : Creates UDP connection
+// CreateConnection : Creates UDP connection with Bootstrap
 func CreateConnection() {
 	s, err := net.ResolveUDPAddr("udp4", util.Props.MustGetString("bootstrapIp")+":"+util.Props.MustGetString("bootstrapPort"))
 	conn, err = net.DialUDP("udp4", nil, s)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-	fmt.Printf("The UDP server is %s\n", conn.RemoteAddr().String())
+	log.Println("The UDP server is ", conn.RemoteAddr().String())
 }
 
 // CreatePeerConnection : Creates UDP connection
@@ -27,10 +28,10 @@ func createPeerConnection(ip string, port string) {
 	s, err := net.ResolveUDPAddr("udp4", ip+":"+port)
 	peerConn, err = net.DialUDP("udp4", nil, s)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-	fmt.Printf("The UDP server is %s\n", conn.RemoteAddr().String())
+	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
 }
 
 func closeConnection(connect *net.UDPConn) {
@@ -43,25 +44,25 @@ func Register(ip string, port string, username string) error {
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
-	fmt.Println(regcmd)
+	log.Println(regcmd)
 
 	regbytes := []byte(regcmd)
 	buffer := make([]byte, 1024)
 
 	_, err := conn.Write(regbytes)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	n, _, err := conn.ReadFromUDP(buffer)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	reply := string(buffer[0:n])
-	fmt.Printf("Reply: %s\n", reply)
+	log.Println("Reply: ", reply)
 
 	response, err := util.DecodeResponse(reply)
 	if err != nil {
@@ -97,24 +98,24 @@ func Unregister(ip string, port string, username string) error {
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
-	fmt.Println(regcmd)
+	log.Println(regcmd)
 
 	regbytes := []byte(regcmd)
 	buffer := make([]byte, 1024)
 
 	_, err := conn.Write(regbytes)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	n, _, err := conn.ReadFromUDP(buffer)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 	reply := string(buffer[0:n])
-	fmt.Printf("Reply: %s\n", reply)
+	log.Println("Reply: ", reply)
 
 	return nil
 }
@@ -128,23 +129,23 @@ func Join(ip string, port string) error {
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
-	fmt.Println(regcmd)
+	log.Println(regcmd)
 
 	regbytes := []byte(regcmd)
 	buffer := make([]byte, 1024)
 
 	_, err := peerConn.Write(regbytes)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 
 	n, _, err := peerConn.ReadFromUDP(buffer)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
-	fmt.Printf("Reply: %s\n", string(buffer[0:n]))
+	log.Println("Reply: ", string(buffer[0:n]))
 
 	closeConnection(peerConn)
 	return nil

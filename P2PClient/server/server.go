@@ -43,24 +43,9 @@ func CreateServer() {
 
 		log.Print("-> ", message)
 
-		data := []byte("0014 JOINOK 0")
+		data := []byte("")
 
-		decodeMessage, err := util.DecodeResponse(message)
-
-		if err != nil {
-			data = []byte("0014 JOINOK 9999")
-		}
-
-		var node model.Node
-
-		node.Ip = decodeMessage.Ips[0]
-		node.Port = decodeMessage.Ips[1]
-
-		err = util.StoreInRT(node)
-
-		if err != nil {
-			data = []byte("0014 JOINOK 9999")
-		}
+		data, err = updateRT(message)
 
 		log.Println("data: ", string(data))
 
@@ -74,4 +59,37 @@ func CreateServer() {
 
 func Shutdown() {
 	connection.Close()
+}
+
+func updateRT(message string) ([]byte, error) {
+
+	decodeMessage, err := util.DecodeRequest(message)
+
+	var node model.Node
+
+	var returnErr error
+	var returnMessage string
+
+	node.Ip = decodeMessage.Ips[0]
+	node.Port = decodeMessage.Ips[1]
+
+	switch decodeMessage.Code {
+	case "JOIN":
+		if err != nil {
+			returnErr = err
+			returnMessage = "0016 JOINOK 9999"
+		}
+		util.StoreInRT(node)
+		returnMessage = "0013 JOINOK 0"
+		break
+	case "LEAVE":
+		if err != nil {
+			returnErr = err
+			returnMessage = "0017 LEAVEOK 9999"
+		}
+		util.RemoveFromRT(node)
+		returnMessage = "0014 LEAVEOK 0"
+		break
+	}
+	return []byte(returnMessage), returnErr
 }
