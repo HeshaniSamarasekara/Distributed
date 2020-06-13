@@ -1,30 +1,24 @@
 package router
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/magiconair/properties"
 
 	"Distributed/P2PClient/client"
+	"Distributed/P2PClient/util"
 )
 
-var props *properties.Properties
-
-func init() {
-	client.CreateConnection()
-	// server.Server()
-}
-
 // NewRouter : Creates a new router
-func NewRouter(prop *properties.Properties) *mux.Router {
-	props = prop
+func NewRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/files", GetFileList).Methods("GET")
 	router.HandleFunc("/register", RegisterNode).Methods("POST")
 	router.HandleFunc("/unregister", UnregisterNode).Methods("DELETE")
 	router.HandleFunc("/join", JoinNode).Methods("POST")
+	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	return router
 }
 
@@ -36,7 +30,7 @@ func GetFileList(w http.ResponseWriter, r *http.Request) {
 
 // RegisterNode : Register node in network
 func RegisterNode(w http.ResponseWriter, r *http.Request) {
-	err := client.Register(props.MustGetString("ip"), props.MustGetString("port"), props.MustGetString("username"))
+	err := client.Register(util.Props.MustGetString("ip"), util.Props.MustGetString("port"), util.Props.MustGetString("username"))
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -47,7 +41,7 @@ func RegisterNode(w http.ResponseWriter, r *http.Request) {
 
 // UnregisterNode : Register node in network
 func UnregisterNode(w http.ResponseWriter, r *http.Request) {
-	err := client.Unregister(props.MustGetString("ip"), props.MustGetString("port"), props.MustGetString("username"))
+	err := client.Unregister(util.Props.MustGetString("ip"), util.Props.MustGetString("port"), util.Props.MustGetString("username"))
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -58,11 +52,16 @@ func UnregisterNode(w http.ResponseWriter, r *http.Request) {
 
 // JoinNode : Join to a node in network
 func JoinNode(w http.ResponseWriter, r *http.Request) {
-	err := client.Join(props.MustGetString("ip"), props.MustGetString("port"))
+	err := client.Join(util.Props.MustGetString("ip"), util.Props.MustGetString("port"))
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.Write([]byte("Successfully joined to network."))
 	}
+}
+
+// GetRouteTable - Returns the route table
+func GetRouteTable(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(util.RouteTable)
 }

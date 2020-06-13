@@ -1,32 +1,31 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 
+	"Distributed/P2PClient/client"
 	"Distributed/P2PClient/router"
-
-	"github.com/magiconair/properties"
+	"Distributed/P2PClient/server"
+	"Distributed/P2PClient/util"
 )
 
-var props *properties.Properties
-
-func init() {
-	configFile := flag.String("configFile", "application.yaml", "Configuration File")
-	flag.Parse()
-	props = properties.MustLoadFile(*configFile, properties.UTF8)
-}
-
 func main() {
+
+	// The server is run on a go routine so as not to block.
+	go func() {
+		client.CreateConnection()
+		server.CreateServer()
+	}()
+
 	// Create a server listening on port 8000
 	s := &http.Server{
-		Addr:    ":" + props.MustGetString("port"),
-		Handler: router.NewRouter(props),
+		Addr:    ":" + util.Props.MustGetString("serverport"),
+		Handler: router.NewRouter(),
 	}
 
-	fmt.Println("Starting UDP client at port " + props.MustGetString("port"))
+	fmt.Println("Starting UDP client at port " + util.Props.MustGetString("serverport"))
 
 	// closeConnection()
 

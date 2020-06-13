@@ -2,18 +2,18 @@ package client
 
 import (
 	"Distributed/P2PClient/model"
+	"Distributed/P2PClient/util"
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 )
 
 var conn *net.UDPConn
-var routeTable model.RouteTable
+var peerConn *net.UDPConn
 
 // CreateConnection : Creates UDP connection
 func CreateConnection() {
-	s, err := net.ResolveUDPAddr("udp4", "localhost:55555")
+	s, err := net.ResolveUDPAddr("udp4", util.Props.MustGetString("bootstrapIp")+":"+util.Props.MustGetString("bootstrapPort"))
 	conn, err = net.DialUDP("udp4", nil, s)
 	if err != nil {
 		fmt.Println(err)
@@ -22,8 +22,19 @@ func CreateConnection() {
 	fmt.Printf("The UDP server is %s\n", conn.RemoteAddr().String())
 }
 
-func closeConnection() {
-	conn.Close()
+// CreatePeerConnection : Creates UDP connection
+func createPeerConnection(ip string, port string) {
+	s, err := net.ResolveUDPAddr("udp4", ip+":"+port)
+	peerConn, err = net.DialUDP("udp4", nil, s)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("The UDP server is %s\n", conn.RemoteAddr().String())
+}
+
+func closeConnection(connect *net.UDPConn) {
+	connect.Close()
 }
 
 // Register : Register to the network
@@ -52,7 +63,30 @@ func Register(ip string, port string, username string) error {
 	reply := string(buffer[0:n])
 	fmt.Printf("Reply: %s\n", reply)
 
-	storeInRT(reply)
+	response, err := util.DecodeResponse(reply)
+	if err != nil {
+		return err
+	}
+
+	peersToConnect := util.RandomPeer(response)
+
+	for i := 0; i < len(peersToConnect); i++ {
+
+		var node model.Node
+
+		hostPort := strings.Split(peersToConnect[i], ":")
+
+		node.Ip = hostPort[0]
+		node.Port = hostPort[1]
+
+		err = Join(node.Ip, node.Port)
+
+		if err != nil {
+			return err
+		}
+
+		util.StoreInRT(node)
+	}
 
 	return nil
 }
@@ -87,7 +121,10 @@ func Unregister(ip string, port string, username string) error {
 
 // Join : Join to a node in the network
 func Join(ip string, port string) error {
-	cmd := " JOIN " + ip + " " + port
+
+	createPeerConnection(ip, port)
+
+	cmd := " JOIN " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port")
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
@@ -96,48 +133,19 @@ func Join(ip string, port string) error {
 	regbytes := []byte(regcmd)
 	buffer := make([]byte, 1024)
 
-	_, err := conn.Write(regbytes)
+	_, err := peerConn.Write(regbytes)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	n, _, err := conn.ReadFromUDP(buffer)
+	n, _, err := peerConn.ReadFromUDP(buffer)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	fmt.Printf("Reply: %s\n", string(buffer[0:n]))
-	return nil
-}
 
-func storeInRT(reply string) error {
-	splittedReply := strings.Split(reply, " ")
-
-	nodecount, err := strconv.Atoi(splittedReply[2])
-
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < nodecount; i++ {
-
-		node := model.Node{}
-
-		node.Ip = splittedReply[3+i]
-		node.Port = splittedReply[4+i]
-
-		err = Join(node.Ip, node.Port)
-
-		if err != nil {
-			return err
-		}
-		routeTable.Nodes = append(routeTable.Nodes, node)
-
-	}
-
-	if len(routeTable.Nodes) > 0 {
-		fmt.Println(routeTable.Nodes[0].Ip + ":" + routeTable.Nodes[0].Port)
-	}
+	closeConnection(peerConn)
 	return nil
 }

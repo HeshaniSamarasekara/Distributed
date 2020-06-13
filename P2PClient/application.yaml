@@ -1,3 +1,8 @@
-port: 8000
+serverport: 8000
+
+port: 9000
 username: node0
-ip: 127.0.0.1
+ip: 10.0.3.15
+
+bootstrapIp: localhost
+bootstrapPort: 55555
