@@ -17,7 +17,6 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/files", GetFileList).Methods("GET")
 	router.HandleFunc("/register", RegisterNode).Methods("POST")
 	router.HandleFunc("/unregister", UnregisterNode).Methods("DELETE")
-	router.HandleFunc("/join", JoinNode).Methods("POST")
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	return router
 }
@@ -47,17 +46,6 @@ func UnregisterNode(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.Write([]byte("Successfully unregistered in network."))
-	}
-}
-
-// JoinNode : Join to a node in network
-func JoinNode(w http.ResponseWriter, r *http.Request) {
-	err := client.Join(util.Props.MustGetString("ip"), util.Props.MustGetString("port"))
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
-		w.Write([]byte("Successfully joined to network."))
 	}
 }
 

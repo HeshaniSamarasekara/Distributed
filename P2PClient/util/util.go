@@ -85,18 +85,24 @@ func DecodeRequest(reply string) (model.Response, error) {
 
 // StoreInRT - Stores the joined nodes in Routing table
 func StoreInRT(node model.Node) {
+	for _, n := range RouteTable.Nodes {
+		if n.Ip == node.Ip && n.Port == node.Port {
+			return
+		}
+	}
 	RouteTable.Nodes = append(RouteTable.Nodes, node)
 }
 
 // RemoveFromRT - Removes stored nodes in Routing table
 func RemoveFromRT(node model.Node) {
-	newRT := model.RouteTable{}
-	for _, n := range RouteTable.Nodes {
-		if n.Ip != node.Ip && n.Port != node.Port {
-			newRT.Nodes = append(newRT.Nodes, n)
+	var removeNode int
+	for i, n := range RouteTable.Nodes {
+		if n.Ip == node.Ip && n.Port == node.Port {
+			removeNode = i
+			break
 		}
 	}
-	RouteTable.Nodes = newRT.Nodes
+	RouteTable.Nodes = append(RouteTable.Nodes[:removeNode], RouteTable.Nodes[removeNode+1:]...)
 }
 
 // RandomPeer - Select random peers
@@ -112,15 +118,11 @@ func RandomPeer(reply model.Response) []string {
 	if count > 2 {
 		choose := rand.Intn(count)
 		randAddresses = append(randAddresses, addresses[choose])
-		addresses = removeIndex(addresses, choose)
+		addresses = append(addresses[:choose], addresses[choose+1:]...)
 		choose = rand.Intn(count - 1)
 		randAddresses = append(randAddresses, addresses[choose])
 		return randAddresses
 	}
 	return addresses
 
-}
-
-func removeIndex(s []string, index int) []string {
-	return append(s[:index], s[index+1:]...)
 }

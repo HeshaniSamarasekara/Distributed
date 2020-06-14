@@ -117,6 +117,27 @@ func Unregister(ip string, port string, username string) error {
 	reply := string(buffer[0:n])
 	log.Println("Reply: ", reply)
 
+	rtLength := len(util.RouteTable.Nodes)
+
+	// Remove from Routing table
+	for i := 0; i < rtLength; i++ {
+
+		nodeToRemove := util.RouteTable.Nodes[i]
+
+		var node model.Node
+
+		node.Ip = nodeToRemove.Ip
+		node.Port = nodeToRemove.Port
+
+		err := Leave(node.Ip, node.Port)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	util.RouteTable = model.RouteTable{}
+
 	return nil
 }
 
@@ -146,6 +167,46 @@ func Join(ip string, port string) error {
 		return err
 	}
 	log.Println("Reply: ", string(buffer[0:n]))
+
+	closeConnection(peerConn)
+	return nil
+}
+
+// Leave : Leave from the network
+func Leave(ip string, port string) error {
+
+	createPeerConnection(ip, port)
+
+	cmd := " LEAVE " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port")
+	count := len(cmd) + 5
+	regcmd := fmt.Sprintf("%04d", count) + cmd
+
+	log.Println(regcmd)
+
+	regbytes := []byte(regcmd)
+	buffer := make([]byte, 1024)
+
+	_, err := peerConn.Write(regbytes)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	n, _, err := peerConn.ReadFromUDP(buffer)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	resp := string(buffer[0:n])
+
+	_, err = util.DecodeResponse(resp)
+
+	if err != nil {
+		return err
+	}
+
+	log.Println(resp)
 
 	closeConnection(peerConn)
 	return nil
