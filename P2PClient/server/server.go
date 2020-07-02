@@ -6,14 +6,11 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 )
 
 var connection *net.UDPConn
-
-func random(min, max int) int {
-	return rand.Intn(max-min) + min
-}
 
 // CreateServer - Creates UDP server
 func CreateServer() {
@@ -45,7 +42,7 @@ func CreateServer() {
 
 		data := []byte("")
 
-		data, err = updateRT(message)
+		data, err = processRequest(message)
 
 		log.Println("data: ", string(data))
 
@@ -61,7 +58,7 @@ func Shutdown() {
 	connection.Close()
 }
 
-func updateRT(message string) ([]byte, error) {
+func processRequest(message string) ([]byte, error) {
 
 	decodeMessage, err := util.DecodeRequest(message)
 
@@ -70,7 +67,7 @@ func updateRT(message string) ([]byte, error) {
 	var returnErr error
 	var returnMessage string
 
-	node.Ip = decodeMessage.Ips[0]
+	node.IP = decodeMessage.Ips[0]
 	node.Port = decodeMessage.Ips[1]
 
 	switch decodeMessage.Code {
@@ -90,6 +87,33 @@ func updateRT(message string) ([]byte, error) {
 		util.RemoveFromRT(node)
 		returnMessage = "0014 LEAVEOK 0"
 		break
+	case "SER":
+		if err != nil {
+			returnErr = err
+		}
+		resp := search(decodeMessage.Ips[2])
+		if resp != "" {
+			returnMessage = resp
+		}
+		log.Println("Search received")
 	}
 	return []byte(returnMessage), returnErr
+}
+
+func search(searchString string) string {
+	var containFiles []string
+	resp := " "
+
+	for _, file := range util.NodeFiles.FileNames {
+		if strings.Contains(file, searchString) {
+			containFiles = append(containFiles, file)
+			resp = resp + file + " "
+		}
+	}
+
+	if len(containFiles) > 0 {
+		return "SEROK " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + resp
+	}
+	return ""
+
 }

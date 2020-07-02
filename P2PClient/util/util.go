@@ -4,10 +4,14 @@ import (
 	"Distributed/P2PClient/model"
 	"errors"
 	"flag"
+	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
+	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/magiconair/properties"
 )
@@ -18,8 +22,15 @@ var Props *properties.Properties
 // RouteTable - Route table
 var RouteTable model.RouteTable
 
+// FileTable - File table
+var FileTable model.FileTable
+
+// NodeFiles - Files in the own node
+var NodeFiles model.NodeFiles
+
 func init() {
 	readConfigurations() // Read configuration files
+	readFileNames()      // Read file names from list
 }
 
 // Read configuration from file
@@ -27,6 +38,20 @@ func readConfigurations() {
 	configFile := flag.String("configFile", "application.yaml", "Configuration File")
 	flag.Parse()
 	Props = properties.MustLoadFile(*configFile, properties.UTF8)
+}
+
+func readFileNames() {
+	readFile := flag.String("fileNames", "FileNames.txt", "File names for nodes")
+	flag.Parse()
+	data, err := ioutil.ReadFile(*readFile)
+	if err != nil {
+		log.Println("Error reading file names.")
+	}
+	allFiles := strings.Split(string(data), "\n")
+	from := float64(randomInt(0, len(allFiles)-1))
+	to := float64(randomInt(0, len(allFiles)-1))
+	NodeFiles.FileNames = allFiles[int(math.Min(from, to)):int(math.Max(from, to))]
+	log.Println(strings.Join(NodeFiles.FileNames, ", "))
 }
 
 // ValidateErrorCode - Error from BS
@@ -69,7 +94,7 @@ func DecodeResponse(reply string) (model.Response, error) {
 	return response, nil
 }
 
-// DecodeRequest - Decodes the response
+// DecodeRequest - Decodes the request
 func DecodeRequest(reply string) (model.Response, error) {
 	splittedReply := strings.Split(reply, " ")
 
@@ -86,7 +111,7 @@ func DecodeRequest(reply string) (model.Response, error) {
 // StoreInRT - Stores the joined nodes in Routing table
 func StoreInRT(node model.Node) {
 	for _, n := range RouteTable.Nodes {
-		if n.Ip == node.Ip && n.Port == node.Port {
+		if n.IP == node.IP && n.Port == node.Port {
 			return
 		}
 	}
@@ -97,7 +122,7 @@ func StoreInRT(node model.Node) {
 func RemoveFromRT(node model.Node) {
 	var removeNode int
 	for i, n := range RouteTable.Nodes {
-		if n.Ip == node.Ip && n.Port == node.Port {
+		if n.IP == node.IP && n.Port == node.Port {
 			removeNode = i
 			break
 		}
@@ -124,5 +149,29 @@ func RandomPeer(reply model.Response) []string {
 		return randAddresses
 	}
 	return addresses
+}
 
+func randomInt(min, max int) int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(max-min) + min
+}
+
+// ReadWriteUDP - Send UDP request and get the response back
+func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) ([]byte, int, error) {
+	regbytes := []byte(regcmd)
+	buffer := make([]byte, 1024)
+
+	_, err := peerConn.Write(regbytes)
+	if err != nil {
+		log.Println(err)
+		return []byte{}, 0, err
+	}
+
+	n, _, err := peerConn.ReadFromUDP(buffer)
+	if err != nil {
+		log.Println(err)
+		return []byte{}, 0, err
+	}
+	log.Println("Reply: ", string(buffer[0:n]))
+	return regbytes, n, nil
 }

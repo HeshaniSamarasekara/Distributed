@@ -18,6 +18,7 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/register", RegisterNode).Methods("POST")
 	router.HandleFunc("/unregister", UnregisterNode).Methods("DELETE")
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
+	router.HandleFunc("/search/{file_name}", SearchFile).Methods("GET")
 	return router
 }
 
@@ -52,4 +53,16 @@ func UnregisterNode(w http.ResponseWriter, r *http.Request) {
 // GetRouteTable - Returns the route table
 func GetRouteTable(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(util.RouteTable)
+}
+
+// SearchFile - Search for a file in the network
+func SearchFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	err := client.Search(vars["file_name"])
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		w.Write([]byte("File is in network."))
+	}
 }

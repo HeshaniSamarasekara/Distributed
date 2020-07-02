@@ -77,10 +77,10 @@ func Register(ip string, port string, username string) error {
 
 		hostPort := strings.Split(peersToConnect[i], ":")
 
-		node.Ip = hostPort[0]
+		node.IP = hostPort[0]
 		node.Port = hostPort[1]
 
-		err = Join(node.Ip, node.Port)
+		err = Join(node.IP, node.Port)
 
 		if err != nil {
 			return err
@@ -126,10 +126,10 @@ func Unregister(ip string, port string, username string) error {
 
 		var node model.Node
 
-		node.Ip = nodeToRemove.Ip
+		node.IP = nodeToRemove.IP
 		node.Port = nodeToRemove.Port
 
-		err := Leave(node.Ip, node.Port)
+		err := Leave(node.IP, node.Port)
 
 		if err != nil {
 			return err
@@ -152,21 +152,11 @@ func Join(ip string, port string) error {
 
 	log.Println(regcmd)
 
-	regbytes := []byte(regcmd)
-	buffer := make([]byte, 1024)
+	_, _, err := util.ReadWriteUDP(regcmd, peerConn)
 
-	_, err := peerConn.Write(regbytes)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
-
-	n, _, err := peerConn.ReadFromUDP(buffer)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	log.Println("Reply: ", string(buffer[0:n]))
 
 	closeConnection(peerConn)
 	return nil
@@ -183,18 +173,9 @@ func Leave(ip string, port string) error {
 
 	log.Println(regcmd)
 
-	regbytes := []byte(regcmd)
-	buffer := make([]byte, 1024)
+	buffer, n, err := util.ReadWriteUDP(regcmd, peerConn)
 
-	_, err := peerConn.Write(regbytes)
 	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	n, _, err := peerConn.ReadFromUDP(buffer)
-	if err != nil {
-		log.Println(err)
 		return err
 	}
 
@@ -205,6 +186,64 @@ func Leave(ip string, port string) error {
 	if err != nil {
 		return err
 	}
+
+	log.Println(resp)
+
+	closeConnection(peerConn)
+	return nil
+}
+
+// Search : Search file in the network
+func Search(searchString string) error {
+	//ttl := util.Props.MustGetInt("ttl")
+
+	for _, file := range util.NodeFiles.FileNames {
+		if strings.Contains(file, searchString) {
+			log.Println("File found")
+			return nil
+		}
+	}
+
+	for _, ftEntry := range util.FileTable.Files {
+		for _, fileString := range ftEntry.FileStrings {
+			if strings.Contains(fileString, searchString) {
+				log.Println("File found in  searchString " + ftEntry.IP + ":" + ftEntry.Port)
+				return nil
+			}
+
+		}
+	}
+
+	for _, neighbor := range util.RouteTable.Nodes {
+		searchInNetwork(neighbor.IP, neighbor.Port, searchString, "2")
+	}
+
+	return nil
+}
+
+func searchInNetwork(ip string, port string, filename string, ttl string) error {
+
+	createPeerConnection(ip, port)
+
+	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + ttl
+	count := len(cmd) + 5
+	regcmd := fmt.Sprintf("%04d", count) + cmd
+
+	log.Println(regcmd)
+
+	buffer, n, err := util.ReadWriteUDP(regcmd, peerConn)
+
+	if err != nil {
+		return err
+	}
+
+	resp := string(buffer[0:n])
+
+	// _, err = util.DecodeResponse(resp)
+
+	// if err != nil {
+	// 	return err
+	// }
 
 	log.Println(resp)
 

@@ -7,7 +7,8 @@ type RouteTable struct {
 
 // Node - Node struct
 type Node struct {
-	Name string
-	Port string
-	Ip   string
+	Name   string
+	Port   string
+	IP     string
+	Status bool
 }
