@@ -204,13 +204,15 @@ func Search(searchString string) error {
 
 	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
 		for _, ftEntry := range util.FileTable.Files {
-			for _, fileString := range ftEntry.FileStrings {
-				if strings.Contains(fileString, searchString) {
-					log.Println("File found in  searchString " + ftEntry.IP + ":" + ftEntry.Port)
-					return nil
-				}
+			// for _, fileString := range ftEntry.FileStrings {
+			// 	// if strings.Contains(fileString, searchString) {
+			// 	// 	log.Println("File found in  searchString " + ftEntry.IP + ":" + ftEntry.Port)
+			// 	// 	return nil
+			// 	// }
 
-			}
+			// }
+			// if strings.Contains()
+			log.Println(ftEntry)
 		}
 	}
 
@@ -236,9 +238,9 @@ func searchInNetwork(ip string, port string, filename string, ttl string) error 
 	if err != nil {
 		return err
 	}
-
+	searchResp := model.SearchResponse{}
 	if resp != "" {
-		searchResp, err = util.DecodeResponse(resp)
+		searchResp, err = util.DecodeSearchResponse(resp)
 	}
 
 	if err != nil {
