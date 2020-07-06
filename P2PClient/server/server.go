@@ -3,6 +3,7 @@ package server
 import (
 	"Distributed/P2PClient/model"
 	"Distributed/P2PClient/util"
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -112,7 +113,9 @@ func search(searchString string) string {
 	}
 
 	if len(containFiles) > 0 {
-		return "SEROK " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + resp
+		cmd := " SEROK " + util.IP + " " + util.Port + resp
+		count := len(cmd) + 5
+		return fmt.Sprintf("%04d", count) + cmd
 	}
 	return ""
 

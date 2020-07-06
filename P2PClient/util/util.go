@@ -28,6 +28,12 @@ var FileTable model.FileTable
 // NodeFiles - Files in the own node
 var NodeFiles model.NodeFiles
 
+// IP - My IP
+var IP string
+
+// Port - My Port
+var Port string
+
 func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
@@ -38,6 +44,8 @@ func readConfigurations() {
 	configFile := flag.String("configFile", "application.yaml", "Configuration File")
 	flag.Parse()
 	Props = properties.MustLoadFile(*configFile, properties.UTF8)
+	IP = Props.MustGetString("ip")
+	Port = Props.MustGetString("port")
 }
 
 func readFileNames() {
@@ -51,7 +59,8 @@ func readFileNames() {
 	from := float64(randomInt(0, len(allFiles)-1))
 	to := float64(randomInt(0, len(allFiles)-1))
 	NodeFiles.FileNames = allFiles[int(math.Min(from, to)):int(math.Max(from, to))]
-	log.Println(strings.Join(NodeFiles.FileNames, ", "))
+	log.Println(len(NodeFiles.FileNames))
+	log.Println(NodeFiles.FileNames)
 }
 
 // ValidateErrorCode - Error from BS
@@ -89,6 +98,30 @@ func DecodeResponse(reply string) (model.Response, error) {
 	response.Count = splittedReply[2]
 	for i := 3; i < len(splittedReply); i++ {
 		response.Ips = append(response.Ips, splittedReply[i])
+	}
+
+	return response, nil
+}
+
+// DecodeSearchResponse - Decodes the search response
+func DecodeSearchResponse(reply string) (model.SearchResponse, error) {
+	splittedReply := strings.Split(reply, " ")
+
+	err := validateErrorCode(splittedReply[2])
+
+	if err != nil {
+		return model.SearchResponse{}, err
+	}
+
+	response := model.SearchResponse{}
+	response.Length = splittedReply[0]
+	response.Code = splittedReply[1]
+	response.Count, _ = strconv.Atoi(response.Length)
+	response.IP = splittedReply[3]
+	response.Port = splittedReply[4]
+	response.Hops = splittedReply[5]
+	for i := 6; i < response.Count; i++ {
+		response.Files = append(response.Files, splittedReply[i])
 	}
 
 	return response, nil
@@ -157,21 +190,44 @@ func randomInt(min, max int) int {
 }
 
 // ReadWriteUDP - Send UDP request and get the response back
-func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) ([]byte, int, error) {
+func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) (string, error) {
 	regbytes := []byte(regcmd)
 	buffer := make([]byte, 1024)
 
 	_, err := peerConn.Write(regbytes)
 	if err != nil {
 		log.Println(err)
-		return []byte{}, 0, err
+		return "", err
 	}
 
 	n, _, err := peerConn.ReadFromUDP(buffer)
 	if err != nil {
 		log.Println(err)
-		return []byte{}, 0, err
+		return "", err
 	}
-	log.Println("Reply: ", string(buffer[0:n]))
-	return regbytes, n, nil
+	reply := string(buffer[0:n])
+	log.Println("Reply: ", reply)
+	return reply, nil
+}
+
+// StoreInFT - Stores the files in File table
+func StoreInFT(response model.SearchResponse) {
+	for _, f := range FileTable.Files {
+		stringsToAdd := ","
+		if f.IP == response.IP && f.Port == response.Port {
+			for _, incoming := range response.Files {
+				if !strings.Contains(f.FileStrings, incoming) {
+					stringsToAdd += "," + incoming
+				}
+			}
+			f.FileStrings += stringsToAdd
+			return
+		}
+	}
+	newFileEntry := model.FileTableEntry{}
+	newFileEntry.IP = response.IP
+	newFileEntry.Port = response.Port
+	newFileEntry.FileStrings = strings.Join(response.Files, ",")
+
+	FileTable.Files = append(FileTable.Files, newFileEntry)
 }

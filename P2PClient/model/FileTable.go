@@ -9,7 +9,7 @@ type FileTable struct {
 type FileTableEntry struct {
 	IP          string
 	Port        string
-	FileStrings []string
+	FileStrings string
 }
 
 // NodeFiles - List of files in the node

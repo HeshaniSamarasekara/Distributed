@@ -2,7 +2,6 @@ package router
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,13 +18,13 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/unregister", UnregisterNode).Methods("DELETE")
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	router.HandleFunc("/search/{file_name}", SearchFile).Methods("GET")
+	router.HandleFunc("/fileTable", GetFileList).Methods("GET")
 	return router
 }
 
 // GetFileList : Returns the file list in the node
 func GetFileList(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("I have 10 files")
-	w.Write([]byte("I have 10 files"))
+	json.NewEncoder(w).Encode(util.NodeFiles.FileNames)
 }
 
 // RegisterNode : Register node in network
@@ -65,4 +64,9 @@ func SearchFile(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write([]byte("File is in network."))
 	}
+}
+
+// GetFileTable : Get the file table for node
+func GetFileTable(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(util.NodeFiles.FileNames)
 }
