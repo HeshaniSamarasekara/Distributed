@@ -108,12 +108,13 @@ func search(searchString string) string {
 	for _, file := range util.NodeFiles.FileNames {
 		if strings.Contains(file, searchString) {
 			containFiles = append(containFiles, file)
-			resp = resp + file + " "
+			resp = resp + strings.Join(strings.Split(file, " "), "_") + " "
 		}
 	}
 
+	// @TODO Vimukthi add hop count
 	if len(containFiles) > 0 {
-		cmd := " SEROK " + util.IP + " " + util.Port + resp
+		cmd := " SEROK " + fmt.Sprintf("%d", len(containFiles)) + " " + util.IP + " " + util.Port + " 1 " + resp
 		count := len(cmd) + 5
 		return fmt.Sprintf("%04d", count) + cmd
 	}

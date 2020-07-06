@@ -25,7 +25,7 @@ func main() {
 		Handler: router.NewRouter(),
 	}
 
-	fmt.Println("Starting UDP client at port " + util.Props.MustGetString("serverport"))
+	fmt.Println("Starting TCP client at port " + util.Props.MustGetString("serverport"))
 
 	// closeConnection()
 

@@ -18,7 +18,7 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/unregister", UnregisterNode).Methods("DELETE")
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	router.HandleFunc("/search/{file_name}", SearchFile).Methods("GET")
-	router.HandleFunc("/fileTable", GetFileList).Methods("GET")
+	router.HandleFunc("/fileTable", GetFileTable).Methods("GET")
 	return router
 }
 
@@ -68,5 +68,5 @@ func SearchFile(w http.ResponseWriter, r *http.Request) {
 
 // GetFileTable : Get the file table for node
 func GetFileTable(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(util.NodeFiles.FileNames)
+	json.NewEncoder(w).Encode(util.FileTable)
 }

@@ -116,7 +116,7 @@ func DecodeSearchResponse(reply string) (model.SearchResponse, error) {
 	response := model.SearchResponse{}
 	response.Length = splittedReply[0]
 	response.Code = splittedReply[1]
-	response.Count, _ = strconv.Atoi(response.Length)
+	response.Count, _ = strconv.Atoi(splittedReply[2])
 	response.IP = splittedReply[3]
 	response.Port = splittedReply[4]
 	response.Hops = splittedReply[5]

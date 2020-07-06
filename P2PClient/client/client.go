@@ -20,7 +20,7 @@ func CreateConnection() {
 		log.Println(err)
 		return
 	}
-	log.Println("The UDP server is ", conn.RemoteAddr().String())
+	log.Println("The Bootstrap server is ", conn.RemoteAddr().String())
 }
 
 // CreatePeerConnection : Creates UDP connection
@@ -194,7 +194,7 @@ func Leave(ip string, port string) error {
 // Search : Search file in the network
 func Search(searchString string) error {
 	//ttl := util.Props.MustGetInt("ttl")
-
+	// @TODO Vimukthi add hop count and TTL
 	for _, file := range util.NodeFiles.FileNames {
 		if strings.Contains(file, searchString) {
 			log.Println("File found in this node")
@@ -204,20 +204,17 @@ func Search(searchString string) error {
 
 	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
 		for _, ftEntry := range util.FileTable.Files {
-			// for _, fileString := range ftEntry.FileStrings {
-			// 	// if strings.Contains(fileString, searchString) {
-			// 	// 	log.Println("File found in  searchString " + ftEntry.IP + ":" + ftEntry.Port)
-			// 	// 	return nil
-			// 	// }
-
-			// }
-			// if strings.Contains()
+			if strings.Contains(ftEntry.FileStrings, searchString) {
+				log.Println("File " + searchString + "found in " + ftEntry.IP + ":" + ftEntry.Port)
+				return nil
+			}
 			log.Println(ftEntry)
 		}
 	}
 
 	for _, neighbor := range util.RouteTable.Nodes {
-		searchInNetwork(neighbor.IP, neighbor.Port, searchString, "2")
+		// This is goroutine. Concurrently executes.
+		go searchInNetwork(neighbor.IP, neighbor.Port, searchString, "2")
 	}
 
 	return nil
@@ -226,6 +223,8 @@ func Search(searchString string) error {
 func searchInNetwork(ip string, port string, filename string, ttl string) error {
 
 	createPeerConnection(ip, port)
+
+	defer closeConnection(peerConn)
 
 	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + ttl
 	count := len(cmd) + 5
@@ -238,17 +237,16 @@ func searchInNetwork(ip string, port string, filename string, ttl string) error 
 	if err != nil {
 		return err
 	}
-	searchResp := model.SearchResponse{}
+
 	if resp != "" {
-		searchResp, err = util.DecodeSearchResponse(resp)
+		searchResp, _ := util.DecodeSearchResponse(resp)
+
+		// @TODO Pathum
+		util.StoreInFT(searchResp)
 	}
 
 	if err != nil {
 		return err
 	}
-
-	util.StoreInFT(searchResp)
-
-	closeConnection(peerConn)
 	return nil
 }
