@@ -57,12 +57,12 @@ func GetRouteTable(w http.ResponseWriter, r *http.Request) {
 // SearchFile - Search for a file in the network
 func SearchFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	err := client.Search(vars["file_name"])
+	resp, err := client.Search(vars["file_name"], "", 9999)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		w.Write([]byte("File is in network."))
+		w.Write([]byte(resp))
 	}
 }
 

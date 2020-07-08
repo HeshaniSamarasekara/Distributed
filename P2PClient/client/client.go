@@ -192,61 +192,78 @@ func Leave(ip string, port string) error {
 }
 
 // Search : Search file in the network
-func Search(searchString string) error {
-	//ttl := util.Props.MustGetInt("ttl")
-	// @TODO Vimukthi add hop count and TTL
+func Search(searchString string, incomingHostPort string, hopCount int) (string, error) {
+
+	if isFileInNode := searchInNode(searchString); isFileInNode != "" {
+		return isFileInNode, nil
+	}
+
+	// var wg sync.WaitGroup
+
+	for _, neighbor := range util.RouteTable.Nodes {
+		// This is goroutine. Concurrently executes.
+		if incomingHostPort == "" || (neighbor.IP+":"+neighbor.Port) != incomingHostPort {
+			var hops int
+			if hopCount == 9999 {
+				hops = util.Hops
+			} else {
+				hops = hopCount
+			}
+			go searchInNetwork(neighbor.IP, neighbor.Port, searchString, hops)
+		}
+	}
+
+	return searchInNode(searchString), nil
+}
+
+func searchInNetwork(ip string, port string, filename string, hops int) {
+
+	// defer wg.Done
+
+	createPeerConnection(ip, port)
+
+	defer closeConnection(peerConn)
+
+	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + fmt.Sprintf("%d", hops)
+	count := len(cmd) + 5
+	sercmd := fmt.Sprintf("%04d", count) + cmd
+
+	log.Println(sercmd)
+
+	resp, err := util.ReadWriteUDP(sercmd, peerConn)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	if resp != "" {
+		log.Println(resp)
+		searchResp, _ := util.DecodeSearchResponse(resp)
+		// @TODO Pathum
+		util.StoreInFT(searchResp)
+	}
+
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func searchInNode(searchString string) string {
 	for _, file := range util.NodeFiles.FileNames {
 		if strings.Contains(file, searchString) {
 			log.Println("File found in this node")
-			return nil
+			return "File found in this node"
 		}
 	}
 
 	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
 		for _, ftEntry := range util.FileTable.Files {
 			if strings.Contains(ftEntry.FileStrings, searchString) {
-				log.Println("File " + searchString + "found in " + ftEntry.IP + ":" + ftEntry.Port)
-				return nil
+				log.Println("File " + searchString + "can be found in " + ftEntry.IP + ":" + ftEntry.Port)
+				return "File " + searchString + "can be found in " + ftEntry.IP + ":" + ftEntry.Port
 			}
 			log.Println(ftEntry)
 		}
 	}
-
-	for _, neighbor := range util.RouteTable.Nodes {
-		// This is goroutine. Concurrently executes.
-		go searchInNetwork(neighbor.IP, neighbor.Port, searchString, "2")
-	}
-
-	return nil
-}
-
-func searchInNetwork(ip string, port string, filename string, ttl string) error {
-
-	createPeerConnection(ip, port)
-
-	defer closeConnection(peerConn)
-
-	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + ttl
-	count := len(cmd) + 5
-	regcmd := fmt.Sprintf("%04d", count) + cmd
-
-	log.Println(regcmd)
-
-	resp, err := util.ReadWriteUDP(regcmd, peerConn)
-
-	if err != nil {
-		return err
-	}
-
-	if resp != "" {
-		searchResp, _ := util.DecodeSearchResponse(resp)
-
-		// @TODO Pathum
-		util.StoreInFT(searchResp)
-	}
-
-	if err != nil {
-		return err
-	}
-	return nil
+	return ""
 }

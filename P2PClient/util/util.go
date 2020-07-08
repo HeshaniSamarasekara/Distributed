@@ -34,6 +34,12 @@ var IP string
 // Port - My Port
 var Port string
 
+// Ttl - My TTL
+var TTL int
+
+// Hops - My Hop count
+var Hops int
+
 func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
@@ -46,6 +52,8 @@ func readConfigurations() {
 	Props = properties.MustLoadFile(*configFile, properties.UTF8)
 	IP = Props.MustGetString("ip")
 	Port = Props.MustGetString("port")
+	TTL = Props.MustGetInt("ttl")
+	Hops = Props.MustGetInt("hops")
 }
 
 func readFileNames() {
@@ -112,6 +120,8 @@ func DecodeSearchResponse(reply string) (model.SearchResponse, error) {
 	if err != nil {
 		return model.SearchResponse{}, err
 	}
+
+	log.Println("This is the reply " + reply)
 
 	response := model.SearchResponse{}
 	response.Length = splittedReply[0]

@@ -1,12 +1,14 @@
 package server
 
 import (
+	"Distributed/P2PClient/client"
 	"Distributed/P2PClient/model"
 	"Distributed/P2PClient/util"
 	"fmt"
 	"log"
 	"math/rand"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -92,16 +94,25 @@ func processRequest(message string) ([]byte, error) {
 		if err != nil {
 			returnErr = err
 		}
-		resp := search(decodeMessage.Ips[2])
-		if resp != "" {
-			returnMessage = resp
+		searchStr := decodeMessage.Ips[2]
+		hopCount, _ := strconv.Atoi(decodeMessage.Ips[3])
+		log.Println(hopCount)
+		if hopCount > 0 {
+			resp := search(searchStr, hopCount-1, node.IP, node.Port)
+			if resp != "" {
+				returnMessage = resp
+			}
+			log.Println("Search received")
+		} else {
+			cmd := " SEROK 0 " + util.IP + " " + util.Port
+			returnMessage = fmt.Sprintf("%04d", len(cmd)+5) + cmd
+			log.Println("Hop count exceeded.")
 		}
-		log.Println("Search received")
 	}
 	return []byte(returnMessage), returnErr
 }
 
-func search(searchString string) string {
+func search(searchString string, hopCount int, incomingIP string, incomingPort string) string {
 	var containFiles []string
 	resp := " "
 
@@ -111,12 +122,17 @@ func search(searchString string) string {
 			resp = resp + strings.Join(strings.Split(file, " "), "_") + " "
 		}
 	}
+	if len(containFiles) == 0 {
+		log.Println("No files found on " + util.IP + ":" + util.Port)
+		client.Search(searchString, incomingIP+":"+incomingPort, hopCount)
+	}
 
-	// @TODO Vimukthi add hop count
 	if len(containFiles) > 0 {
-		cmd := " SEROK " + fmt.Sprintf("%d", len(containFiles)) + " " + util.IP + " " + util.Port + " 1 " + resp
+		cmd := " SEROK " + fmt.Sprintf("%d", len(containFiles)) + " " + util.IP + " " + util.Port + " " + fmt.Sprintf("%d", hopCount) + " " + resp
 		count := len(cmd) + 5
-		return fmt.Sprintf("%04d", count) + cmd
+		returnCmd := fmt.Sprintf("%04d", count) + cmd
+		log.Println(returnCmd)
+		return returnCmd
 	}
 	return ""
 
