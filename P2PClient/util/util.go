@@ -53,7 +53,7 @@ func readConfigurations() {
 	IP = Props.MustGetString("ip")
 	Port = Props.MustGetString("port")
 	TTL = Props.MustGetInt("ttl")
-	Hops = Props.MustGetInt("hops")
+	Hops = Props.MustGetInt("hopcount")
 }
 
 func readFileNames() {
