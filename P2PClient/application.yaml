@@ -2,7 +2,7 @@ serverport: 9004
 
 port: 9004
 username: node4
-ip: 10.0.3.15
+ip: localhost
 
 bootstrapIp: localhost
 bootstrapPort: 55555

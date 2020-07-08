@@ -28,6 +28,8 @@ var FileTable model.FileTable
 // NodeFiles - Files in the own node
 var NodeFiles model.NodeFiles
 
+var Argument model.Argument
+
 func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
@@ -174,4 +176,20 @@ func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) ([]byte, int, error) {
 	}
 	log.Println("Reply: ", string(buffer[0:n]))
 	return regbytes, n, nil
+}
+
+func SetCommandLineArgument(arg model.Argument) {
+	Argument = arg
+	log.Println("IP value " + Argument.IP)
+	log.Println("Port value " + Argument.IP)
+}
+
+func GetCommandLineArgument() model.Argument {
+	if len(Argument.IP) == 0 {
+		Argument.IP = Props.MustGetString("ip")
+	}
+	if len(Argument.Port) == 0 {
+		Argument.Port = Props.MustGetString("port")
+	}
+	return Argument
 }
