@@ -34,6 +34,9 @@ var IP string
 // Port - My Port
 var Port string
 
+// Hop Count - Number of hops before end search
+var HopCount int
+
 func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
@@ -46,6 +49,7 @@ func readConfigurations() {
 	Props = properties.MustLoadFile(*configFile, properties.UTF8)
 	IP = Props.MustGetString("ip")
 	Port = Props.MustGetString("port")
+	HopCount = Props.MustGetInt("hopcount")
 }
 
 func readFileNames() {

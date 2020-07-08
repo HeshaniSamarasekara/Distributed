@@ -213,20 +213,17 @@ func Search(searchString string) error {
 	}
 
 	for _, neighbor := range util.RouteTable.Nodes {
-		// This is goroutine. Concurrently executes.
-		go searchInNetwork(neighbor.IP, neighbor.Port, searchString, "2")
+		searchInNetwork(neighbor.IP, neighbor.Port, searchString, util.HopCount)
 	}
 
 	return nil
 }
 
-func searchInNetwork(ip string, port string, filename string, ttl string) error {
+func searchInNetwork(ip string, port string, filename string, hopcount int) error {
 
 	createPeerConnection(ip, port)
 
-	defer closeConnection(peerConn)
-
-	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + ttl
+	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + string(hopcount)
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
