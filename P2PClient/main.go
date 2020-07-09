@@ -28,11 +28,11 @@ func main() {
 
 	// Create a server listening on port 8000
 	s := &http.Server{
-		Addr:    ":" + util.Props.MustGetString("serverport"),
+		Addr:    ":" + util.Argument.Port,
 		Handler: router.NewRouter(),
 	}
 
-	fmt.Println("Starting TCP client at port " + util.Props.MustGetString("serverport"))
+	fmt.Println("Starting TCP client at port " + util.Argument.Port)
 
 	// closeConnection()
 
