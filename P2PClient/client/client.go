@@ -218,8 +218,6 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 
 func searchInNetwork(ip string, port string, filename string, hops int) {
 
-	// defer wg.Done
-
 	createPeerConnection(ip, port)
 
 	defer closeConnection(peerConn)
@@ -237,6 +235,8 @@ func searchInNetwork(ip string, port string, filename string, hops int) {
 	}
 
 	if resp != "" {
+		util.MU.Lock()
+		defer util.MU.Unlock()
 		log.Println(resp)
 		searchResp, _ := util.DecodeSearchResponse(resp)
 		// @TODO Pathum

@@ -11,6 +11,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/magiconair/properties"
@@ -34,11 +35,14 @@ var IP string
 // Port - My Port
 var Port string
 
-// Ttl - My TTL
+// TTL - My TTL
 var TTL int
 
 // Hops - My Hop count
 var Hops int
+
+// MU - Mutex to update file table
+var MU sync.Mutex
 
 func init() {
 	readConfigurations() // Read configuration files
@@ -63,7 +67,8 @@ func readFileNames() {
 	if err != nil {
 		log.Println("Error reading file names.")
 	}
-	allFiles := strings.Split(string(data), "\n")
+	fileStrings := string(data)
+	allFiles := strings.Split(strings.ReplaceAll(fileStrings, "\r", ""), "\n")
 	from := float64(randomInt(0, len(allFiles)-1))
 	to := float64(randomInt(0, len(allFiles)-1))
 	NodeFiles.FileNames = allFiles[int(math.Min(from, to)):int(math.Max(from, to))]
@@ -129,9 +134,11 @@ func DecodeSearchResponse(reply string) (model.SearchResponse, error) {
 	response.Count, _ = strconv.Atoi(splittedReply[2])
 	response.IP = splittedReply[3]
 	response.Port = splittedReply[4]
-	response.Hops = splittedReply[5]
-	for i := 6; i < response.Count; i++ {
-		response.Files = append(response.Files, splittedReply[i])
+	if response.Count > 0 {
+		response.Hops = splittedReply[5]
+		for i := 6; i < response.Count; i++ {
+			response.Files = append(response.Files, splittedReply[i])
+		}
 	}
 
 	return response, nil
@@ -223,14 +230,14 @@ func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) (string, error) {
 // StoreInFT - Stores the files in File table
 func StoreInFT(response model.SearchResponse) {
 	for _, f := range FileTable.Files {
-		stringsToAdd := ","
-		if f.IP == response.IP && f.Port == response.Port {
+		stringsToAdd := ""
+		if f.IP+":"+f.Port == response.IP+":"+response.Port {
 			for _, incoming := range response.Files {
 				if !strings.Contains(f.FileStrings, incoming) {
 					stringsToAdd += "," + incoming
 				}
 			}
-			f.FileStrings += stringsToAdd
+			f.FileStrings = f.FileStrings + "," + stringsToAdd
 			return
 		}
 	}
