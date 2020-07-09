@@ -237,7 +237,7 @@ func StoreInFT(response model.SearchResponse) {
 					stringsToAdd += "," + incoming
 				}
 			}
-			f.FileStrings = f.FileStrings + "," + stringsToAdd
+			f.FileStrings += stringsToAdd
 			return
 		}
 	}
