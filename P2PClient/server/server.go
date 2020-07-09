@@ -14,9 +14,7 @@ var connection *net.UDPConn
 
 // CreateServer - Creates UDP server
 func CreateServer() {
-
-	s, err := net.ResolveUDPAddr("udp4", util.GetCommandLineArgument().IP+":"+util.GetCommandLineArgument().Port)
-
+	s, err := net.ResolveUDPAddr("udp4", util.Props.MustGetString("ip")+":"+util.Props.MustGetString("port"))
 	if err != nil {
 		log.Println(err)
 		return
@@ -28,7 +26,7 @@ func CreateServer() {
 		return
 	}
 
-	log.Println("Starting UDP server at port " + util.GetCommandLineArgument().Port)
+	log.Println("Starting UDP server at port " + util.Props.MustGetString("port"))
 
 	defer connection.Close()
 
@@ -114,7 +112,7 @@ func search(searchString string) string {
 	}
 
 	if len(containFiles) > 0 {
-		return "SEROK " + util.GetCommandLineArgument().IP + " " + util.GetCommandLineArgument().Port + resp
+		return "SEROK " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + resp
 	}
 	return ""
 
