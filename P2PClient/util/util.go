@@ -29,6 +29,8 @@ var FileTable model.FileTable
 // NodeFiles - Files in the own node
 var NodeFiles model.NodeFiles
 
+var Argument model.Argument
+
 // IP - My IP
 var IP string
 
@@ -247,4 +249,20 @@ func StoreInFT(response model.SearchResponse) {
 	newFileEntry.FileStrings = strings.Join(response.Files, ",")
 
 	FileTable.Files = append(FileTable.Files, newFileEntry)
+}
+
+func SetCommandLineArgument(arg model.Argument) {
+	Argument = arg
+	log.Println("IP value " + Argument.IP)
+	log.Println("Port value " + Argument.IP)
+}
+
+func GetCommandLineArgument() model.Argument {
+	if len(Argument.IP) == 0 {
+		Argument.IP = Props.MustGetString("ip")
+	}
+	if len(Argument.Port) == 0 {
+		Argument.Port = Props.MustGetString("port")
+	}
+	return Argument
 }

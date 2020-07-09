@@ -146,7 +146,7 @@ func Join(ip string, port string) error {
 
 	createPeerConnection(ip, port)
 
-	cmd := " JOIN " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port")
+	cmd := " JOIN " + util.GetCommandLineArgument().IP + " " + util.GetCommandLineArgument().Port
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
@@ -167,7 +167,7 @@ func Leave(ip string, port string) error {
 
 	createPeerConnection(ip, port)
 
-	cmd := " LEAVE " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port")
+	cmd := " LEAVE " + util.GetCommandLineArgument().IP + " " + util.GetCommandLineArgument().Port
 	count := len(cmd) + 5
 	regcmd := fmt.Sprintf("%04d", count) + cmd
 
@@ -222,7 +222,7 @@ func searchInNetwork(ip string, port string, filename string, hops int) {
 
 	defer closeConnection(peerConn)
 
-	cmd := " SER " + util.Props.MustGetString("ip") + " " + util.Props.MustGetString("port") + " " + filename + " " + fmt.Sprintf("%d", hops)
+	cmd := " SER " + util.GetCommandLineArgument().IP + " " + util.GetCommandLineArgument().Port + " " + filename + " " + fmt.Sprintf("%d", hops)
 	count := len(cmd) + 5
 	sercmd := fmt.Sprintf("%04d", count) + cmd
 
