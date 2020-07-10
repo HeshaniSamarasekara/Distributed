@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -195,6 +196,7 @@ func Leave(ip string, port string) error {
 
 // Search : Search file in the network
 func Search(searchString string, incomingHostPort string, hopCount int) (string, error) {
+	var wg sync.WaitGroup
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(util.TTL)*time.Second)
@@ -213,9 +215,12 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 			} else {
 				hops = hopCount
 			}
-			go searchInNetwork(neighbor.IP, neighbor.Port, searchString, hops)
+			wg.Add(1)
+			go searchInNetwork(&wg, neighbor.IP, neighbor.Port, searchString, hops)
 		}
 	}
+
+	wg.Wait()
 
 	select {
 	case <-ctx.Done():
@@ -228,7 +233,9 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 	}
 }
 
-func searchInNetwork(ip string, port string, filename string, hops int) {
+func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string, hops int) {
+
+	defer wg.Done()
 
 	createPeerConnection(ip, port)
 
@@ -246,7 +253,7 @@ func searchInNetwork(ip string, port string, filename string, hops int) {
 		log.Println(err)
 	}
 
-	if resp != "" {
+	if strings.TrimSpace(resp) != "" {
 		util.MU.Lock()
 		defer util.MU.Unlock()
 		log.Println(resp)
@@ -278,6 +285,8 @@ func searchInNode(searchString string) string {
 		return returnCmd
 	}
 
+	util.MU.Lock()
+	defer util.MU.Unlock()
 	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
 		for _, ftEntry := range util.FileTable.Files {
 			if strings.Contains(ftEntry.FileStrings, searchString) {

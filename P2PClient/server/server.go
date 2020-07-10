@@ -131,9 +131,11 @@ func search(searchString string, hopCount int, incomingIP string, incomingPort s
 			log.Println(err)
 			return ""
 		}
-		responseModel, _ := util.DecodeSearchResponse(resp)
-		if responseModel.Count > 0 {
-			return resp
+		if strings.TrimSpace(resp) != "" {
+			responseModel, _ := util.DecodeSearchResponse(resp)
+			if responseModel.Count > 0 {
+				return resp
+			}
 		}
 	}
 
@@ -141,9 +143,11 @@ func search(searchString string, hopCount int, incomingIP string, incomingPort s
 		cmd := " SEROK " + fmt.Sprintf("%d", len(containFiles)) + " " + util.IP + " " + util.Port + " " + fmt.Sprintf("%d", hopCount) + resp
 		count := len(cmd) + 5
 		returnCmd := fmt.Sprintf("%04d", count) + cmd
-		log.Println(returnCmd)
 		return returnCmd
 	}
-	return ""
+	cmd := " SEROK 0 " + util.IP + " " + util.Port + " 0 "
+	count := len(cmd) + 5
+	returnCmd := fmt.Sprintf("%04d", count) + cmd
+	return returnCmd
 
 }
