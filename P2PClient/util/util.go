@@ -36,6 +36,9 @@ var IP string
 // Port - My Port
 var Port string
 
+// Name - My name
+var Name string
+
 // TTL - My TTL
 var TTL int
 
@@ -51,9 +54,10 @@ func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
 	argIP := os.Args[1:]
-	if len(argIP) >= 2 {
+	if len(argIP) >= 3 {
 		IP = argIP[0]
 		Port = argIP[1]
+		Name = argIP[2]
 	}
 }
 
