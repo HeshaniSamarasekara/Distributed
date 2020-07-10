@@ -34,7 +34,7 @@ func RegisterNode(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		w.Write([]byte("Successfully registered in network."))
+		w.Write([]byte("Successfully registered in network...\n"))
 	}
 }
 
@@ -45,7 +45,7 @@ func UnregisterNode(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
-		w.Write([]byte("Successfully unregistered in network."))
+		w.Write([]byte("Successfully unregistered in network...\n"))
 	}
 }
 
