@@ -116,21 +116,29 @@ func processRequest(message string) ([]byte, error) {
 
 func search(searchString string, hopCount int, incomingIP string, incomingPort string) string {
 	var containFiles []string
-	resp := " "
+	resp := ""
 
 	for _, file := range util.NodeFiles.FileNames {
 		if strings.Contains(file, searchString) {
 			containFiles = append(containFiles, file)
-			resp = resp + strings.Join(strings.Split(file, " "), "_") + " "
+			resp = resp + " " + strings.Join(strings.Split(file, " "), "_")
 		}
 	}
 	if len(containFiles) == 0 {
 		log.Println("No files found on " + util.IP + ":" + util.Port)
-		client.Search(searchString, incomingIP+":"+incomingPort, hopCount)
+		resp, err := client.Search(searchString, incomingIP+":"+incomingPort, hopCount)
+		if err != nil {
+			log.Println(err)
+			return ""
+		}
+		responseModel, _ := util.DecodeSearchResponse(resp)
+		if responseModel.Count > 0 {
+			return resp
+		}
 	}
 
 	if len(containFiles) > 0 {
-		cmd := " SEROK " + fmt.Sprintf("%d", len(containFiles)) + " " + util.IP + " " + util.Port + " " + fmt.Sprintf("%d", hopCount) + " " + resp
+		cmd := " SEROK " + fmt.Sprintf("%d", len(containFiles)) + " " + util.IP + " " + util.Port + " " + fmt.Sprintf("%d", hopCount) + resp
 		count := len(cmd) + 5
 		returnCmd := fmt.Sprintf("%04d", count) + cmd
 		log.Println(returnCmd)

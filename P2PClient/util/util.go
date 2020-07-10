@@ -138,10 +138,11 @@ func DecodeSearchResponse(reply string) (model.SearchResponse, error) {
 	response.Port = splittedReply[4]
 	if response.Count > 0 {
 		response.Hops = splittedReply[5]
-		for i := 6; i < response.Count; i++ {
+		for i := 6; i < (6 + response.Count); i++ {
 			response.Files = append(response.Files, splittedReply[i])
 		}
 	}
+	log.Println(response)
 
 	return response, nil
 }

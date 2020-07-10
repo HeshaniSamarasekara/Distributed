@@ -240,7 +240,9 @@ func searchInNetwork(ip string, port string, filename string, hops int) {
 		log.Println(resp)
 		searchResp, _ := util.DecodeSearchResponse(resp)
 		// @TODO Pathum
-		util.StoreInFT(searchResp)
+		if searchResp.Count > 0 {
+			util.StoreInFT(searchResp)
+		}
 	}
 
 	if err != nil {
@@ -249,20 +251,31 @@ func searchInNetwork(ip string, port string, filename string, hops int) {
 }
 
 func searchInNode(searchString string) string {
+	contains := ""
+
 	for _, file := range util.NodeFiles.FileNames {
 		if strings.Contains(file, searchString) {
 			log.Println("File found in this node")
-			return "File found in this node"
+			contains += file + ","
 		}
+	}
+
+	if contains != "" {
+		cmd := " SEROK " + fmt.Sprintf("%d", len(strings.Split(contains, ","))) + " " + util.IP + " " + util.Port + " 0 " + strings.ReplaceAll(contains, ",", " ")
+		count := len(cmd) + 5
+		returnCmd := fmt.Sprintf("%04d", count) + cmd
+		return returnCmd
 	}
 
 	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
 		for _, ftEntry := range util.FileTable.Files {
 			if strings.Contains(ftEntry.FileStrings, searchString) {
 				log.Println("File " + searchString + "can be found in " + ftEntry.IP + ":" + ftEntry.Port)
-				return "File " + searchString + "can be found in " + ftEntry.IP + ":" + ftEntry.Port
+				cmd := " SEROK " + fmt.Sprintf("%d", 1) + " " + ftEntry.IP + " " + ftEntry.Port + " 0 " + ftEntry.FileStrings
+				count := len(cmd) + 5
+				returnCmd := fmt.Sprintf("%04d", count) + cmd
+				return returnCmd
 			}
-			log.Println(ftEntry)
 		}
 	}
 	return ""
