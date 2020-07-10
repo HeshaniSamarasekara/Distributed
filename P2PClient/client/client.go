@@ -3,10 +3,12 @@ package client
 import (
 	"Distributed/P2PClient/model"
 	"Distributed/P2PClient/util"
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 var conn *net.UDPConn
@@ -193,12 +195,14 @@ func Leave(ip string, port string) error {
 
 // Search : Search file in the network
 func Search(searchString string, incomingHostPort string, hopCount int) (string, error) {
+	ctx := context.Background()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(util.TTL)*time.Second)
+	defer cancel()
 
 	if isFileInNode := searchInNode(searchString); isFileInNode != "" {
 		return isFileInNode, nil
 	}
-
-	// var wg sync.WaitGroup
 
 	for _, neighbor := range util.RouteTable.Nodes {
 		// This is goroutine. Concurrently executes.
@@ -213,7 +217,15 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 		}
 	}
 
-	return searchInNode(searchString), nil
+	select {
+	case <-ctx.Done():
+		fmt.Println("TIME OUT")
+		cancel()
+		return "TIME OUT", ctx.Err()
+	default:
+		fmt.Println("ALL DONE")
+		return searchInNode(searchString), nil
+	}
 }
 
 func searchInNetwork(ip string, port string, filename string, hops int) {

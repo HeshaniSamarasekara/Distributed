@@ -48,8 +48,6 @@ var Hops int
 // MU - Mutex to update file table
 var MU sync.Mutex
 
-var arg model.Argument
-
 func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
