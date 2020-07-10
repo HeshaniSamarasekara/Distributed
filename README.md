@@ -1,9 +1,7 @@
-# Distributed
-Distributed Project P2P
+# Distributed Project P2P
 
-to build use [go build]
 
-## How to Run a node
+## How to start a node
 
 For windows
 .\P2PClient.exe [IP] [PORT] [NODE NAME]
