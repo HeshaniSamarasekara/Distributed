@@ -27,14 +27,20 @@ func CreateConnection() {
 }
 
 // CreatePeerConnection : Creates UDP connection
-func createPeerConnection(ip string, port string) {
+func createPeerConnection(ip string, port string) error {
 	s, err := net.ResolveUDPAddr("udp4", ip+":"+port)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	peerConn, err = net.DialUDP("udp4", nil, s)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
+
+	return nil
 }
 
 func closeConnection(connect *net.UDPConn) {
@@ -236,8 +242,12 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string, hops int) {
 
 	defer wg.Done()
+	errm := createPeerConnection(ip, port)
 
-	createPeerConnection(ip, port)
+	if errm != nil {
+		updateRoutingTable(ip, port)
+		return
+	}
 
 	defer closeConnection(peerConn)
 
@@ -250,7 +260,9 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 	resp, err := util.ReadWriteUDP(sercmd, peerConn)
 
 	if err != nil {
+		updateRoutingTable(ip, port)
 		log.Println(err)
+		return
 	}
 
 	if strings.TrimSpace(resp) != "" {
@@ -265,6 +277,16 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 	if err != nil {
 		log.Println(err)
+	}
+}
+
+func updateRoutingTable(ip string, port string) {
+	for i, node := range util.RouteTable.Nodes {
+		if node.IP == ip && node.Port == port {
+			util.RouteTable.Nodes = append(util.RouteTable.Nodes[:i], util.RouteTable.Nodes[i+1:]...)
+			log.Println("removing node" + ip + port)
+			break
+		}
 	}
 }
 

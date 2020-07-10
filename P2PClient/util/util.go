@@ -75,7 +75,7 @@ func readFileNames() {
 	flag.Parse()
 	data, err := ioutil.ReadFile(*readFile)
 	if err != nil {
-		log.Println("Error reading file names.")
+		log.Println("Error reading file names...\n")
 	}
 	fileStrings := string(data)
 	allFiles := strings.Split(strings.ReplaceAll(fileStrings, "\r", ""), "\n")
@@ -90,17 +90,17 @@ func readFileNames() {
 func validateErrorCode(code string) error {
 	switch code {
 	case "9999":
-		log.Println("failed, there is some error in the command")
-		return errors.New("failed, there is some error in the command")
+		log.Println("failed, there is some error in the command...\n")
+		return errors.New("failed, there is some error in the command...\n")
 	case "9998":
-		log.Println("failed, already registered to you, unregister first")
-		return errors.New("failed, already registered to you, unregister first")
+		log.Println("failed, already registered to you, unregister first...\n")
+		return errors.New("failed, already registered to you, unregister first...\n")
 	case "9997":
-		log.Println("failed, registered to another user, try a different IP and port")
-		return errors.New("failed, registered to another user, try a different IP and port")
+		log.Println("failed, registered to another user, try a different IP and port...\n")
+		return errors.New("failed, registered to another user, try a different IP and port...\n")
 	case "9996":
-		log.Println("failed, can’t register. BS full")
-		return errors.New("failed, can’t register. BS full")
+		log.Println("failed, can’t register. BS full...\n")
+		return errors.New("failed, can’t register. BS full...\n")
 	}
 	return nil
 }
