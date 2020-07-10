@@ -9,7 +9,7 @@
 ```
 Ex:
 ```
-./P2PClient 127.0.0.1 9000
+./P2PClient 127.0.0.1 9000 NODE1
 ```
 
 ### On Windows
@@ -19,7 +19,7 @@ Ex:
 ```
 Ex:
 ```
-.\P2PClient.exe 127.0.0.1 9000
+.\P2PClient.exe 127.0.0.1 9000 NODE1
 ```
 
 ## How to register a node in the system
