@@ -29,7 +29,7 @@ func GetFileList(w http.ResponseWriter, r *http.Request) {
 
 // RegisterNode : Register node in network
 func RegisterNode(w http.ResponseWriter, r *http.Request) {
-	err := client.Register(util.GetCommandLineArgument().IP, util.GetCommandLineArgument().Port, util.Props.MustGetString("username"))
+	err := client.Register(util.IP, util.Port, util.Props.MustGetString("username"))
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
@@ -40,7 +40,7 @@ func RegisterNode(w http.ResponseWriter, r *http.Request) {
 
 // UnregisterNode : Register node in network
 func UnregisterNode(w http.ResponseWriter, r *http.Request) {
-	err := client.Unregister(util.GetCommandLineArgument().IP, util.GetCommandLineArgument().Port, util.Props.MustGetString("username"))
+	err := client.Unregister(util.IP, util.Port, util.Props.MustGetString("username"))
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)

@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,8 +30,6 @@ var FileTable model.FileTable
 // NodeFiles - Files in the own node
 var NodeFiles model.NodeFiles
 
-var Argument model.Argument
-
 // IP - My IP
 var IP string
 
@@ -46,9 +45,16 @@ var Hops int
 // MU - Mutex to update file table
 var MU sync.Mutex
 
+var arg model.Argument
+
 func init() {
 	readConfigurations() // Read configuration files
 	readFileNames()      // Read file names from list
+	argIP := os.Args[1:]
+	if len(argIP) >= 2 {
+		IP = argIP[0]
+		Port = argIP[1]
+	}
 }
 
 // Read configuration from file
@@ -127,8 +133,6 @@ func DecodeSearchResponse(reply string) (model.SearchResponse, error) {
 	if err != nil {
 		return model.SearchResponse{}, err
 	}
-
-	log.Println("This is the reply " + reply)
 
 	response := model.SearchResponse{}
 	response.Length = splittedReply[0]
@@ -250,20 +254,4 @@ func StoreInFT(response model.SearchResponse) {
 	newFileEntry.FileStrings = strings.Join(response.Files, ",")
 
 	FileTable.Files = append(FileTable.Files, newFileEntry)
-}
-
-func SetCommandLineArgument(arg model.Argument) {
-	Argument = arg
-	log.Println("IP value " + Argument.IP)
-	log.Println("Port value " + Argument.IP)
-}
-
-func GetCommandLineArgument() model.Argument {
-	if len(Argument.IP) == 0 {
-		Argument.IP = Props.MustGetString("ip")
-	}
-	if len(Argument.Port) == 0 {
-		Argument.Port = Props.MustGetString("port")
-	}
-	return Argument
 }

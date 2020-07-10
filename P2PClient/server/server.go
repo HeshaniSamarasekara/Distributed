@@ -18,7 +18,7 @@ var connection *net.UDPConn
 // CreateServer - Creates UDP server
 func CreateServer() {
 
-	s, err := net.ResolveUDPAddr("udp4", util.GetCommandLineArgument().IP+":"+util.GetCommandLineArgument().Port)
+	s, err := net.ResolveUDPAddr("udp4", util.IP+":"+util.Port)
 
 	if err != nil {
 		log.Println(err)
@@ -31,7 +31,7 @@ func CreateServer() {
 		return
 	}
 
-	log.Println("Starting UDP server at port " + util.GetCommandLineArgument().Port)
+	log.Println("Starting UDP server at port " + util.Port)
 
 	defer connection.Close()
 
