@@ -239,7 +239,6 @@ func searchInNetwork(ip string, port string, filename string, hops int) {
 		defer util.MU.Unlock()
 		log.Println(resp)
 		searchResp, _ := util.DecodeSearchResponse(resp)
-		// @TODO Pathum
 		if searchResp.Count > 0 {
 			util.StoreInFT(searchResp)
 		}

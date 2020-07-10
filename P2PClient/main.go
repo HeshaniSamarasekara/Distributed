@@ -19,15 +19,13 @@ func main() {
 		server.CreateServer()
 	}()
 
-	// Create a server listening on port 8000
+	// Create a server listening on port
 	s := &http.Server{
-		Addr:    ":" + util.Argument.Port,
+		Addr:    ":" + util.Port,
 		Handler: router.NewRouter(),
 	}
 
 	fmt.Println("Starting TCP client at port " + util.Port)
-
-	// closeConnection()
 
 	// Continue to process new requests until an error occurs
 	log.Fatal(s.ListenAndServe())
