@@ -4,6 +4,7 @@ import (
 	"Distributed/P2PClient/model"
 	"Distributed/P2PClient/util"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -26,14 +27,15 @@ func CreateConnection() {
 }
 
 // CreatePeerConnection : Creates UDP connection
-func createPeerConnection(ip string, port string) {
+func createPeerConnection(ip string, port string) error {
 	s, err := net.ResolveUDPAddr("udp4", ip+":"+port)
 	peerConn, err = net.DialUDP("udp4", nil, s)
 	if err != nil {
 		log.Println(err)
-		return
+		return errors.New("ConnectionFail")
 	}
 	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
+	return nil
 }
 
 func closeConnection(connect *net.UDPConn) {
@@ -230,34 +232,47 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 
 func searchInNetwork(ip string, port string, filename string, hops int) {
 
-	createPeerConnection(ip, port)
+	if errm := createPeerConnection(ip, port); errm == nil && !errors.Is(errm, errors.New("ConnectionFail")) {
 
-	defer closeConnection(peerConn)
+		defer closeConnection(peerConn)
 
-	cmd := " SER " + util.IP + " " + util.Port + " " + filename + " " + fmt.Sprintf("%d", hops)
-	count := len(cmd) + 5
-	sercmd := fmt.Sprintf("%04d", count) + cmd
+		cmd := " SER " + util.IP + " " + util.Port + " " + filename + " " + fmt.Sprintf("%d", hops)
+		count := len(cmd) + 5
+		sercmd := fmt.Sprintf("%04d", count) + cmd
 
-	log.Println(sercmd)
+		log.Println(sercmd)
 
-	resp, err := util.ReadWriteUDP(sercmd, peerConn)
+		resp, err := util.ReadWriteUDP(sercmd, peerConn)
 
-	if err != nil {
-		log.Println(err)
-	}
-
-	if resp != "" {
-		util.MU.Lock()
-		defer util.MU.Unlock()
-		log.Println(resp)
-		searchResp, _ := util.DecodeSearchResponse(resp)
-		if searchResp.Count > 0 {
-			util.StoreInFT(searchResp)
+		if err != nil {
+			log.Println(err)
 		}
-	}
 
-	if err != nil {
-		log.Println(err)
+		if resp != "" {
+			util.MU.Lock()
+			defer util.MU.Unlock()
+			log.Println(resp)
+			searchResp, _ := util.DecodeSearchResponse(resp)
+			if searchResp.Count > 0 {
+				util.StoreInFT(searchResp)
+			}
+		}
+
+		if err != nil {
+			log.Println(err)
+		}
+	} else {
+		updateRoutingTable(ip, port)
+	}
+}
+
+func updateRoutingTable(ip string, port string) {
+	for i, node := range util.RouteTable.Nodes {
+		if node.IP == ip && node.Port == port {
+			util.RouteTable.Nodes = append(util.RouteTable.Nodes[:i], util.RouteTable.Nodes[i+1:]...)
+			log.Println("removing node" + ip + port)
+			break
+		}
 	}
 }
 
