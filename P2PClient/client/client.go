@@ -226,16 +226,24 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 		}
 	}
 
-	wg.Wait()
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
 
 	select {
+	case <-done:
+		fmt.Println("SEARCH DONE IN NETWORK")
+		return searchInNode(searchString), nil
 	case <-ctx.Done():
 		fmt.Println("TIME OUT")
 		cancel()
-		return "TIME OUT", ctx.Err()
-	default:
-		fmt.Println("ALL DONE")
-		return searchInNode(searchString), nil
+		cmd := " SEROK 0 " + util.IP + " " + util.Port + " 0 "
+		count := len(cmd) + 5
+		returnCmd := fmt.Sprintf("%04d", count) + cmd
+		log.Println(returnCmd)
+		return returnCmd, nil
 	}
 }
 
