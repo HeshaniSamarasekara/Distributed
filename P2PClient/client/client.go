@@ -290,7 +290,7 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 func updateRoutingTable(ip string, port string) {
 	for i, node := range util.RouteTable.Nodes {
-		if node.IP == ip && node.Port == port {
+		if node.IP+":"+node.Port == ip+":"+port {
 			util.RouteTable.Nodes = append(util.RouteTable.Nodes[:i], util.RouteTable.Nodes[i+1:]...)
 			log.Println("removing node" + ip + port)
 			break
