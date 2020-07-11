@@ -23,6 +23,7 @@ func CreateConnection() {
 		log.Println(err)
 		return
 	}
+	AutomaticRegister()
 	log.Println("The Bootstrap server is ", conn.RemoteAddr().String())
 }
 
@@ -341,4 +342,19 @@ func searchInNode(searchString string) string {
 		}
 	}
 	return ""
+}
+
+func AutomaticRegister() {
+	err2 := Register(util.IP, util.Port, util.Name)
+	if err2 != nil {
+		log.Println(err2)
+		err1 := Unregister(util.IP, util.Port, util.Name)
+		if err1 != nil {
+			log.Println(err1)
+		}
+		err3 := Register(util.IP, util.Port, util.Name)
+		if err3 != nil {
+			log.Println(err3)
+		}
+	}
 }
