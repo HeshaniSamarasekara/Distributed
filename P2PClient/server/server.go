@@ -59,10 +59,6 @@ func CreateServer() {
 	}
 }
 
-func Shutdown() {
-	connection.Close()
-}
-
 func processRequest(message string) ([]byte, error) {
 
 	decodeMessage, err := util.DecodeRequest(message)

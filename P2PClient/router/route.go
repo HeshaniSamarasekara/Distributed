@@ -38,7 +38,7 @@ func RegisterNode(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UnregisterNode : Register node in network
+// UnregisterNode : Unregister node in network
 func UnregisterNode(w http.ResponseWriter, r *http.Request) {
 	err := client.Unregister(util.IP, util.Port, util.Name)
 	if err != nil {
