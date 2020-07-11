@@ -130,6 +130,8 @@ func Unregister(ip string, port string, username string) error {
 
 	util.SetRT(model.RouteTable{})
 
+	updateFileEntryTable(ip, port)
+
 	return nil
 }
 
@@ -296,6 +298,12 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 func updateFileEntryTable(ip string, port string) {
 	localFt := util.GetFT()
+	if 0 == len(localFt.Files) {
+		return
+	}
+	if 1 == len(localFt.Files) {
+		localFt.Files = localFt.Files[:0]
+	}
 	for i, node := range util.GetFT().Files {
 		if node.IP+":"+node.Port == ip+":"+port {
 			localFt.Files = append(localFt.Files[:i], localFt.Files[i+1:]...)
@@ -308,6 +316,12 @@ func updateFileEntryTable(ip string, port string) {
 
 func updateRoutingTable(ip string, port string) {
 	localRT := util.GetRT()
+	if 0 == len(localRT.Nodes) {
+		return
+	}
+	if 1 == len(localRT.Nodes) {
+		localRT.Nodes = localRT.Nodes[:0]
+	}
 	for i, node := range util.GetRT().Nodes {
 		if node.IP+":"+node.Port == ip+":"+port {
 			localRT.Nodes = append(localRT.Nodes[:i], localRT.Nodes[i+1:]...)
