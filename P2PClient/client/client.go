@@ -254,6 +254,7 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 	if errm != nil {
 		updateRoutingTable(ip, port)
+		updateFileEntryTable(ip, port)
 		return
 	}
 
@@ -269,6 +270,7 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 	if err != nil {
 		updateRoutingTable(ip, port)
+		updateFileEntryTable(ip, port)
 		log.Println(err)
 		return
 	}
@@ -288,11 +290,21 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 	}
 }
 
+func updateFileEntryTable(ip string, port string) {
+	for i, node := range util.FileTable.Files {
+		if node.IP == ip && node.Port == port {
+			util.FileTable.Files = append(util.FileTable.Files[:i], util.FileTable.Files[i+1:]...)
+			log.Println("removing entry from File table " + ip + ":" + port)
+			break
+		}
+	}
+}
+
 func updateRoutingTable(ip string, port string) {
 	for i, node := range util.RouteTable.Nodes {
 		if node.IP == ip && node.Port == port {
 			util.RouteTable.Nodes = append(util.RouteTable.Nodes[:i], util.RouteTable.Nodes[i+1:]...)
-			log.Println("removing node" + ip + port)
+			log.Println("removing entry from Route table " + ip + ":" + port)
 			break
 		}
 	}
