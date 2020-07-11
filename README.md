@@ -1,5 +1,22 @@
 # Distributed Project P2P
 
+## How to setup
+#### Prerequisites
+- Go Installed (go version go1.12.6 or higher)
+- JDK installed (13.0.2 higher)
+- Linux nodes (preferably CentOS 7 or higher)
+
+**Step1:** Copy the Project to your $GOPATH
+
+**Step 2:** Navigate into the P2PClient directory.
+```bash
+cd $GOPATH/src/Distributed/P2PClient/
+```
+**Step 3:** Build the Project
+```bash
+go build
+```
+
 ## How to start a node
 
 ### On Linux/iOS
@@ -60,8 +77,14 @@ Expected sample response
 For filenames with more than one word should replace spaces in the name with underscore character.
 Ex: Harry_Potter
 
-## How to search file Table of a node
+## How to search File Table of a node
 Ex:
 ```
 GET http://127.0.0.1:9000/fileTable
 ```
+
+## Tested configurations
+- Java Bootstrap Server
+- CentOS Linux release 7.7.1908 (Core)
+- openjdk version "13.0.2" 2020-01-14
+- go version go1.12.6 linux/amd64
