@@ -51,6 +51,14 @@ Ex:
 ```
 GET http://127.0.0.1:9000/search/{file_name}
 ```
+Expected sample response
+```
+[SIZE]  SEROK [NO_OF_FILES] [HOST]  [PORT]  [HOP_COUNT] [FILE_NAME]
+
+0035 SEROK 1 localhost 1111 0 Glee
+```
+For filenames with more than one word should replace spaces in the name with underscore character.
+Ex: Harry_Potter
 
 ## How to search file Table of a node
 Ex:
