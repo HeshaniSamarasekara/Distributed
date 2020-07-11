@@ -45,8 +45,11 @@ var TTL int
 // Hops - My Hop count
 var Hops int
 
-// MU - Mutex to update file table
-var MU sync.Mutex
+// MuFT - Mutex to update file table
+var MuFT sync.Mutex
+
+// MuRT - Mutex to update route table
+var MuRT sync.Mutex
 
 func init() {
 	readConfigurations() // Read configuration files
@@ -90,17 +93,17 @@ func readFileNames() {
 func validateErrorCode(code string) error {
 	switch code {
 	case "9999":
-		log.Println("failed, there is some error in the command...\n")
-		return errors.New("failed, there is some error in the command...\n")
+		log.Println("failed, there is some error in the command...")
+		return errors.New("failed, there is some error in the command")
 	case "9998":
-		log.Println("failed, already registered to you, unregister first...\n")
-		return errors.New("failed, already registered to you, unregister first...\n")
+		log.Println("failed, already registered to you, unregister first...")
+		return errors.New("failed, already registered to you, unregister first")
 	case "9997":
-		log.Println("failed, registered to another user, try a different IP and port...\n")
-		return errors.New("failed, registered to another user, try a different IP and port...\n")
+		log.Println("failed, registered to another user, try a different IP and port...")
+		return errors.New("failed, registered to another user, try a different IP and port")
 	case "9996":
-		log.Println("failed, can’t register. BS full...\n")
-		return errors.New("failed, can’t register. BS full...\n")
+		log.Println("failed, can’t register. BS full...")
+		return errors.New("failed, can’t register. BS full")
 	}
 	return nil
 }
@@ -169,16 +172,19 @@ func DecodeRequest(reply string) (model.Response, error) {
 
 // StoreInRT - Stores the joined nodes in Routing table
 func StoreInRT(node model.Node) {
+	MuRT.Lock()
 	for _, n := range RouteTable.Nodes {
 		if n.IP == node.IP && n.Port == node.Port {
 			return
 		}
 	}
 	RouteTable.Nodes = append(RouteTable.Nodes, node)
+	MuRT.Unlock()
 }
 
 // RemoveFromRT - Removes stored nodes in Routing table
 func RemoveFromRT(node model.Node) {
+	MuRT.Lock()
 	var removeNode int
 	for i, n := range RouteTable.Nodes {
 		if n.IP == node.IP && n.Port == node.Port {
@@ -187,6 +193,7 @@ func RemoveFromRT(node model.Node) {
 		}
 	}
 	RouteTable.Nodes = append(RouteTable.Nodes[:removeNode], RouteTable.Nodes[removeNode+1:]...)
+	MuRT.Unlock()
 }
 
 // RandomPeer - Select random peers
@@ -238,6 +245,7 @@ func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) (string, error) {
 
 // StoreInFT - Stores the files in File table
 func StoreInFT(response model.SearchResponse) {
+	MuFT.Lock()
 	for _, f := range FileTable.Files {
 		stringsToAdd := ""
 		if f.IP+":"+f.Port == response.IP+":"+response.Port {
@@ -256,4 +264,5 @@ func StoreInFT(response model.SearchResponse) {
 	newFileEntry.FileStrings = strings.Join(response.Files, ",")
 
 	FileTable.Files = append(FileTable.Files, newFileEntry)
+	MuFT.Unlock()
 }

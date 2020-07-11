@@ -13,10 +13,9 @@ import (
 )
 
 var conn *net.UDPConn
-var peerConn *net.UDPConn
 
-// CreateConnection : Creates UDP connection with Bootstrap
-func CreateConnection() {
+// CreateBootstrapConnection : Creates UDP connection with Bootstrap
+func CreateBootstrapConnection() {
 	s, err := net.ResolveUDPAddr("udp4", util.Props.MustGetString("bootstrapIp")+":"+util.Props.MustGetString("bootstrapPort"))
 	conn, err = net.DialUDP("udp4", nil, s)
 	if err != nil {
@@ -24,23 +23,6 @@ func CreateConnection() {
 		return
 	}
 	log.Println("The Bootstrap server is ", conn.RemoteAddr().String())
-}
-
-// CreatePeerConnection : Creates UDP connection
-func createPeerConnection(ip string, port string) error {
-	s, err := net.ResolveUDPAddr("udp4", ip+":"+port)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	peerConn, err = net.DialUDP("udp4", nil, s)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
-
-	return nil
 }
 
 func closeConnection(connect *net.UDPConn) {
@@ -153,7 +135,17 @@ func Unregister(ip string, port string, username string) error {
 // Join : Join to a node in the network
 func Join(ip string, port string) error {
 
-	createPeerConnection(ip, port)
+	s, err1 := net.ResolveUDPAddr("udp4", ip+":"+port)
+	if err1 != nil {
+		return err1
+	}
+	peerConn, err2 := net.DialUDP("udp4", nil, s)
+	if err2 != nil {
+		return err2
+	}
+
+	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
+	defer closeConnection(peerConn)
 
 	cmd := " JOIN " + util.IP + " " + util.Port
 	count := len(cmd) + 5
@@ -166,15 +158,22 @@ func Join(ip string, port string) error {
 	if err != nil {
 		return err
 	}
-
-	closeConnection(peerConn)
 	return nil
 }
 
 // Leave : Leave from the network
 func Leave(ip string, port string) error {
 
-	createPeerConnection(ip, port)
+	s, err1 := net.ResolveUDPAddr("udp4", ip+":"+port)
+	if err1 != nil {
+		return err1
+	}
+	peerConn, err2 := net.DialUDP("udp4", nil, s)
+	if err2 != nil {
+		return err2
+	}
+	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
+	defer closeConnection(peerConn)
 
 	cmd := " LEAVE " + util.IP + " " + util.Port
 	count := len(cmd) + 5
@@ -195,8 +194,6 @@ func Leave(ip string, port string) error {
 	}
 
 	log.Println(resp)
-
-	closeConnection(peerConn)
 	return nil
 }
 
@@ -250,9 +247,13 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string, hops int) {
 
 	defer wg.Done()
-	errm := createPeerConnection(ip, port)
+	s, err1 := net.ResolveUDPAddr("udp4", ip+":"+port)
+	peerConn, err2 := net.DialUDP("udp4", nil, s)
+	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
 
-	if errm != nil {
+	if err1 != nil || err2 != nil {
+		log.Println(err1)
+		log.Println(err2)
 		updateRoutingTable(ip, port)
 		updateFileEntryTable(ip, port)
 		return
@@ -276,8 +277,8 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 	}
 
 	if strings.TrimSpace(resp) != "" {
-		util.MU.Lock()
-		defer util.MU.Unlock()
+		util.MuFT.Lock()
+		util.MuFT.Unlock()
 		log.Println(resp)
 		searchResp, _ := util.DecodeSearchResponse(resp)
 		if searchResp.Count > 0 {
@@ -292,7 +293,7 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 func updateFileEntryTable(ip string, port string) {
 	for i, node := range util.FileTable.Files {
-		if node.IP == ip && node.Port == port {
+		if node.IP+":"+node.Port == ip+":"+port {
 			util.FileTable.Files = append(util.FileTable.Files[:i], util.FileTable.Files[i+1:]...)
 			log.Println("removing entry from File table " + ip + ":" + port)
 			break
@@ -327,8 +328,8 @@ func searchInNode(searchString string) string {
 		return returnCmd
 	}
 
-	util.MU.Lock()
-	defer util.MU.Unlock()
+	util.MuFT.Lock()
+	defer util.MuFT.Unlock()
 	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
 		for _, ftEntry := range util.FileTable.Files {
 			if strings.Contains(ftEntry.FileStrings, searchString) {

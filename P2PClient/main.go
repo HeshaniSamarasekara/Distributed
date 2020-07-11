@@ -15,7 +15,7 @@ func main() {
 
 	// The server is run on a go routine so as not to block.
 	go func() {
-		client.CreateConnection()
+		client.CreateBootstrapConnection()
 		server.CreateServer()
 	}()
 
