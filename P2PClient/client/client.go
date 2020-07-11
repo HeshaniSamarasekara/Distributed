@@ -108,12 +108,12 @@ func Unregister(ip string, port string, username string) error {
 	reply := string(buffer[0:n])
 	log.Println("Reply: ", reply)
 
-	rtLength := len(util.RouteTable.Nodes)
+	rtLength := len(util.GetRT().Nodes)
 
 	// Remove from Routing table
 	for i := 0; i < rtLength; i++ {
 
-		nodeToRemove := util.RouteTable.Nodes[i]
+		nodeToRemove := util.GetRT().Nodes[i]
 
 		var node model.Node
 
@@ -127,7 +127,7 @@ func Unregister(ip string, port string, username string) error {
 		}
 	}
 
-	util.RouteTable = model.RouteTable{}
+	util.SetRT(model.RouteTable{})
 
 	return nil
 }
@@ -209,7 +209,7 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 		return isFileInNode, nil
 	}
 
-	for _, neighbor := range util.RouteTable.Nodes {
+	for _, neighbor := range util.GetRT().Nodes {
 		// This is goroutine. Concurrently executes.
 		if incomingHostPort == "" || (neighbor.IP+":"+neighbor.Port) != incomingHostPort {
 			var hops int
@@ -223,7 +223,7 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 		}
 	}
 
-	done := make(chan struct{})
+	done := make(chan struct{}, 1)
 	go func() {
 		wg.Wait()
 		close(done)
@@ -245,8 +245,7 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 }
 
 func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string, hops int) {
-
-	defer wg.Done()
+	stored := false
 	s, err1 := net.ResolveUDPAddr("udp4", ip+":"+port)
 	peerConn, err2 := net.DialUDP("udp4", nil, s)
 	log.Println("The UDP server is ", peerConn.RemoteAddr().String())
@@ -277,38 +276,45 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 	}
 
 	if strings.TrimSpace(resp) != "" {
-		util.MuFT.Lock()
-		util.MuFT.Unlock()
-		log.Println(resp)
 		searchResp, _ := util.DecodeSearchResponse(resp)
 		if searchResp.Count > 0 {
-			util.StoreInFT(searchResp)
+			stored = true
+			util.StoreInFT(wg, searchResp)
 		}
 	}
 
 	if err != nil {
 		log.Println(err)
 	}
+
+	if !stored {
+		wg.Done()
+	}
+
 }
 
 func updateFileEntryTable(ip string, port string) {
-	for i, node := range util.FileTable.Files {
+	localFt := util.GetFT()
+	for i, node := range util.GetFT().Files {
 		if node.IP+":"+node.Port == ip+":"+port {
-			util.FileTable.Files = append(util.FileTable.Files[:i], util.FileTable.Files[i+1:]...)
+			localFt.Files = append(localFt.Files[:i], localFt.Files[i+1:]...)
 			log.Println("removing entry from File table " + ip + ":" + port)
 			break
 		}
 	}
+	util.SetFT(localFt)
 }
 
 func updateRoutingTable(ip string, port string) {
-	for i, node := range util.RouteTable.Nodes {
+	localRT := util.GetRT()
+	for i, node := range util.GetRT().Nodes {
 		if node.IP+":"+node.Port == ip+":"+port {
-			util.RouteTable.Nodes = append(util.RouteTable.Nodes[:i], util.RouteTable.Nodes[i+1:]...)
+			localRT.Nodes = append(localRT.Nodes[:i], localRT.Nodes[i+1:]...)
 			log.Println("removing entry from Route table " + ip + ":" + port)
 			break
 		}
 	}
+	util.SetRT(localRT)
 }
 
 func searchInNode(searchString string) string {
@@ -328,10 +334,9 @@ func searchInNode(searchString string) string {
 		return returnCmd
 	}
 
-	util.MuFT.Lock()
-	defer util.MuFT.Unlock()
-	if util.FileTable.Files != nil && len(util.FileTable.Files) > 0 {
-		for _, ftEntry := range util.FileTable.Files {
+	localFt := util.GetFT()
+	if localFt.Files != nil && len(localFt.Files) > 0 {
+		for _, ftEntry := range localFt.Files {
 			if strings.Contains(ftEntry.FileStrings, searchString) {
 				log.Println("File " + searchString + "can be found in " + ftEntry.IP + ":" + ftEntry.Port)
 				cmd := " SEROK " + fmt.Sprintf("%d", 1) + " " + ftEntry.IP + " " + ftEntry.Port + " 0 " + ftEntry.FileStrings

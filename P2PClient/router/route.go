@@ -51,7 +51,7 @@ func UnregisterNode(w http.ResponseWriter, r *http.Request) {
 
 // GetRouteTable - Returns the route table
 func GetRouteTable(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(util.RouteTable)
+	json.NewEncoder(w).Encode(util.GetRT())
 }
 
 // SearchFile - Search for a file in the network
@@ -68,5 +68,5 @@ func SearchFile(w http.ResponseWriter, r *http.Request) {
 
 // GetFileTable : Get the file table for node
 func GetFileTable(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(util.FileTable)
+	json.NewEncoder(w).Encode(util.GetFT())
 }

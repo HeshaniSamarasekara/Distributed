@@ -22,10 +22,10 @@ import (
 var Props *properties.Properties
 
 // RouteTable - Route table
-var RouteTable model.RouteTable
+var routeTable model.RouteTable
 
 // FileTable - File table
-var FileTable model.FileTable
+var fileTable model.FileTable
 
 // NodeFiles - Files in the own node
 var NodeFiles model.NodeFiles
@@ -78,7 +78,7 @@ func readFileNames() {
 	flag.Parse()
 	data, err := ioutil.ReadFile(*readFile)
 	if err != nil {
-		log.Println("Error reading file names...\n")
+		log.Println("Error reading file names...")
 	}
 	fileStrings := string(data)
 	allFiles := strings.Split(strings.ReplaceAll(fileStrings, "\r", ""), "\n")
@@ -172,28 +172,32 @@ func DecodeRequest(reply string) (model.Response, error) {
 
 // StoreInRT - Stores the joined nodes in Routing table
 func StoreInRT(node model.Node) {
-	MuRT.Lock()
-	for _, n := range RouteTable.Nodes {
+	// MuRT.Lock()
+	// defer MuRT.Unlock()
+	for _, n := range GetRT().Nodes {
 		if n.IP == node.IP && n.Port == node.Port {
 			return
 		}
 	}
-	RouteTable.Nodes = append(RouteTable.Nodes, node)
-	MuRT.Unlock()
+	localRT := GetRT()
+	localRT.Nodes = append(localRT.Nodes, node)
+	SetRT(localRT)
 }
 
 // RemoveFromRT - Removes stored nodes in Routing table
 func RemoveFromRT(node model.Node) {
-	MuRT.Lock()
+	// MuRT.Lock()
+	// defer MuRT.Unlock()
 	var removeNode int
-	for i, n := range RouteTable.Nodes {
+	for i, n := range GetRT().Nodes {
 		if n.IP == node.IP && n.Port == node.Port {
 			removeNode = i
 			break
 		}
 	}
-	RouteTable.Nodes = append(RouteTable.Nodes[:removeNode], RouteTable.Nodes[removeNode+1:]...)
-	MuRT.Unlock()
+	localRT := GetRT()
+	localRT.Nodes = append(localRT.Nodes[:removeNode], localRT.Nodes[removeNode+1:]...)
+	SetRT(localRT)
 }
 
 // RandomPeer - Select random peers
@@ -244,9 +248,10 @@ func ReadWriteUDP(regcmd string, peerConn *net.UDPConn) (string, error) {
 }
 
 // StoreInFT - Stores the files in File table
-func StoreInFT(response model.SearchResponse) {
-	MuFT.Lock()
-	for _, f := range FileTable.Files {
+func StoreInFT(wg *sync.WaitGroup, response model.SearchResponse) {
+	defer wg.Done()
+	localFT := GetFT()
+	for i, f := range localFT.Files {
 		stringsToAdd := ""
 		if f.IP+":"+f.Port == response.IP+":"+response.Port {
 			for _, incoming := range response.Files {
@@ -254,7 +259,8 @@ func StoreInFT(response model.SearchResponse) {
 					stringsToAdd += "," + incoming
 				}
 			}
-			f.FileStrings += stringsToAdd
+			localFT.Files[i].FileStrings += stringsToAdd
+			SetFT(localFT)
 			return
 		}
 	}
@@ -263,6 +269,35 @@ func StoreInFT(response model.SearchResponse) {
 	newFileEntry.Port = response.Port
 	newFileEntry.FileStrings = strings.Join(response.Files, ",")
 
-	FileTable.Files = append(FileTable.Files, newFileEntry)
-	MuFT.Unlock()
+	localFT.Files = append(localFT.Files, newFileEntry)
+	log.Println("Stored in FT : ", localFT)
+	SetFT(localFT)
+}
+
+// GetRT - Return route table
+func GetRT() model.RouteTable {
+	MuRT.Lock()
+	defer MuRT.Unlock()
+	return routeTable
+}
+
+// SetRT - Set new route table
+func SetRT(rt model.RouteTable) {
+	MuRT.Lock()
+	defer MuRT.Unlock()
+	routeTable = rt
+}
+
+// GetFT - Return file table
+func GetFT() model.FileTable {
+	MuFT.Lock()
+	defer MuFT.Unlock()
+	return fileTable
+}
+
+// SetFT - Set new file table
+func SetFT(ft model.FileTable) {
+	MuFT.Lock()
+	defer MuFT.Unlock()
+	fileTable = ft
 }
