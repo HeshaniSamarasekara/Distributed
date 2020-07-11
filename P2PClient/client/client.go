@@ -339,8 +339,15 @@ func searchInNode(searchString string) string {
 	if localFt.Files != nil && len(localFt.Files) > 0 {
 		for _, ftEntry := range localFt.Files {
 			if strings.Contains(ftEntry.FileStrings, searchString) {
-				log.Println("File " + searchString + "can be found in " + ftEntry.IP + ":" + ftEntry.Port)
-				cmd := " SEROK " + fmt.Sprintf("%d", 1) + " " + ftEntry.IP + " " + ftEntry.Port + " 0 " + ftEntry.FileStrings
+				fileNames := strings.Split(ftEntry.FileStrings, ",")
+				correcteNames := ""
+				for _, n := range fileNames {
+					if strings.Contains(n, searchString) {
+						correcteNames += n
+					}
+				}
+				log.Println("File " + searchString + " can be found in " + ftEntry.IP + ":" + ftEntry.Port)
+				cmd := " SEROK " + fmt.Sprintf("%d", 1) + " " + ftEntry.IP + " " + ftEntry.Port + " 0 " + correcteNames
 				count := len(cmd) + 5
 				returnCmd := fmt.Sprintf("%04d", count) + cmd
 				return returnCmd

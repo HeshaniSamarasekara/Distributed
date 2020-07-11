@@ -81,7 +81,7 @@ func readFileNames() {
 		log.Println("Error reading file names...")
 	}
 	fileStrings := string(data)
-	allFiles := strings.Split(strings.ReplaceAll(fileStrings, "\r", ""), "\n")
+	allFiles := strings.Split(strings.ReplaceAll(strings.ReplaceAll(fileStrings, "\r", ""), " ", "_"), "\n")
 	from := float64(randomInt(0, len(allFiles)-1))
 	to := float64(randomInt(0, len(allFiles)-1))
 	NodeFiles.FileNames = allFiles[int(math.Min(from, to)):int(math.Max(from, to))]
