@@ -8,6 +8,7 @@ import (
 
 	"Distributed/P2PClient/client"
 	"Distributed/P2PClient/util"
+	"strconv"
 )
 
 // NewRouter : Creates a new router
@@ -19,6 +20,8 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	router.HandleFunc("/search/{file_name}", SearchFile).Methods("GET")
 	router.HandleFunc("/fileTable", GetFileTable).Methods("GET")
+	router.HandleFunc("/download/{file_name}", DownloadFile).Methods("GET")
+	router.HandleFunc("/download/{server}/{port}/{file_name}", DownloadFileFromNetwork).Methods("GET")
 	return router
 }
 
@@ -69,4 +72,35 @@ func SearchFile(w http.ResponseWriter, r *http.Request) {
 // GetFileTable : Get the file table for node
 func GetFileTable(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(util.GetFT())
+}
+
+// DownloadFile : Download file from the node
+func DownloadFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fileName := vars["file_name"]
+	err := util.PrepareFile(fileName)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		http.ServeFile(w, r, util.Name+"/"+fileName)
+	}
+}
+
+// DownloadFileFromNetwork : Download file from another node
+func DownloadFileFromNetwork(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	server := vars["server"]
+	port := vars["port"]
+	fileName := vars["file_name"]
+	err := client.DownloadFileFromNetwork(server, port, fileName)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	} else {
+		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		http.ServeFile(w, r, util.Name+"/"+fileName)
+	}
+
 }

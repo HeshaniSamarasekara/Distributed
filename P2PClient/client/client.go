@@ -5,8 +5,11 @@ import (
 	"Distributed/P2PClient/util"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -371,6 +374,7 @@ func searchInNode(searchString string) string {
 	return ""
 }
 
+// AutomaticRegister - Automatically register node in network
 func AutomaticRegister() {
 	err2 := Register(util.IP, util.Port, util.Name)
 	if err2 != nil {
@@ -384,4 +388,27 @@ func AutomaticRegister() {
 			log.Println(err3)
 		}
 	}
+}
+
+// DownloadFileFromNetwork - Download File From Network
+func DownloadFileFromNetwork(server string, port string, fileName string) error {
+	response, err := http.Get("http://" + server + ":" + port + "/download/" + fileName)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if _, err := os.Stat(util.Name); os.IsNotExist(err) {
+		os.Mkdir(util.Name, 0755)
+	}
+	out, err := os.Create(util.Name + "/" + fileName)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, response.Body)
+	if err != nil {
+		return err
+	}
+	return nil
 }

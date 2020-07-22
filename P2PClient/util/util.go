@@ -301,3 +301,28 @@ func SetFT(ft model.FileTable) {
 	defer MuFT.Unlock()
 	fileTable = ft
 }
+
+// PrepareFile - Prepares random file
+func PrepareFile(fileName string) error {
+	if contains(NodeFiles.FileNames, fileName) {
+		randFile := make([]byte, randomInt(2, 10)*1024*1024)
+		if _, err := os.Stat(Name); os.IsNotExist(err) {
+			os.Mkdir(Name, 0755)
+		}
+		err := ioutil.WriteFile(Name+"/"+fileName, randFile, 0755)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return errors.New("File not found")
+}
+
+func contains(arr []string, str string) bool {
+	for _, a := range arr {
+		if a == str {
+			return true
+		}
+	}
+	return false
+}
