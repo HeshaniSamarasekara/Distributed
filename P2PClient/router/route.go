@@ -82,6 +82,8 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	} else {
+		//TODO Vimukthi
+		// util.UpdateFileEntryTable()
 		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("SHA", sha)
@@ -100,6 +102,7 @@ func DownloadFileFromNetwork(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	} else {
+		util.UpdateNodeFiles(fileName)
 		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("SHA", sha)

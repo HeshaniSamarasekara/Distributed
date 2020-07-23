@@ -348,3 +348,27 @@ func CalculateHash(filePath string) string {
 	sha := hex.EncodeToString(hasher.Sum(nil))
 	return sha
 }
+
+// UpdateNodeFiles - Update the file list inside node
+func UpdateNodeFiles(newFile string) {
+	NodeFiles.FileNames = append(NodeFiles.FileNames, newFile)
+}
+
+// UpdateFileEntryTable - Updates file table
+func UpdateFileEntryTable(ip string, port string) {
+	localFt := GetFT()
+	if 0 == len(localFt.Files) {
+		return
+	}
+	if 1 == len(localFt.Files) {
+		localFt.Files = localFt.Files[:0]
+	}
+	for i, node := range GetFT().Files {
+		if node.IP+":"+node.Port == ip+":"+port {
+			localFt.Files = append(localFt.Files[:i], localFt.Files[i+1:]...)
+			log.Println("removing entry from File table " + ip + ":" + port)
+			break
+		}
+	}
+	SetFT(localFt)
+}

@@ -134,7 +134,7 @@ func Unregister(ip string, port string, username string) error {
 
 	util.SetRT(model.RouteTable{})
 
-	updateFileEntryTable(ip, port)
+	util.UpdateFileEntryTable(ip, port)
 
 	return nil
 }
@@ -261,7 +261,7 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 		log.Println(err1)
 		log.Println(err2)
 		updateRoutingTable(ip, port)
-		updateFileEntryTable(ip, port)
+		util.UpdateFileEntryTable(ip, port)
 		return
 	}
 
@@ -277,7 +277,7 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 
 	if err != nil {
 		updateRoutingTable(ip, port)
-		updateFileEntryTable(ip, port)
+		util.UpdateFileEntryTable(ip, port)
 		log.Println(err)
 		return
 	}
@@ -298,24 +298,6 @@ func searchInNetwork(wg *sync.WaitGroup, ip string, port string, filename string
 		wg.Done()
 	}
 
-}
-
-func updateFileEntryTable(ip string, port string) {
-	localFt := util.GetFT()
-	if 0 == len(localFt.Files) {
-		return
-	}
-	if 1 == len(localFt.Files) {
-		localFt.Files = localFt.Files[:0]
-	}
-	for i, node := range util.GetFT().Files {
-		if node.IP+":"+node.Port == ip+":"+port {
-			localFt.Files = append(localFt.Files[:i], localFt.Files[i+1:]...)
-			log.Println("removing entry from File table " + ip + ":" + port)
-			break
-		}
-	}
-	util.SetFT(localFt)
 }
 
 func updateRoutingTable(ip string, port string) {
