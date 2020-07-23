@@ -311,9 +311,11 @@ func PrepareFile(fileName string) error {
 			os.Mkdir(Name, 0755)
 		}
 		err := ioutil.WriteFile(Name+"/"+fileName, randFile, 0755)
-		sha256 := sha256.Sum256(randFile)
-		fmt.Printf("%x\n",sha256)
-		fmt.Printf("%x\n", value/(1024*1024))
+		sha1 := sha256.Sum256(randFile)
+		sha := hex.EncodeToString(sha1[:])
+		fmt.Println("Hash code value is : " + sha)
+		size := strconv.Itoa(value/(1024*1024))
+		fmt.Println("file size is " + size +"Mb")
 		if err != nil {
 			return err
 		}
