@@ -20,7 +20,7 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	router.HandleFunc("/search/{file_name}", SearchFile).Methods("GET")
 	router.HandleFunc("/fileTable", GetFileTable).Methods("GET")
-	router.HandleFunc("/download/{file_name}", DownloadFile).Methods("GET")
+	router.HandleFunc("/upload/{file_name}", UploadFile).Methods("GET")
 	router.HandleFunc("/download/{server}/{port}/{file_name}", DownloadFileFromNetwork).Methods("GET")
 	return router
 }
@@ -74,8 +74,8 @@ func GetFileTable(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(util.GetFT())
 }
 
-// DownloadFile : Download file from the node
-func DownloadFile(w http.ResponseWriter, r *http.Request) {
+// UploadFile : Download file from the node
+func UploadFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileName := vars["file_name"]
 	sha, err := util.PrepareFile(fileName)
