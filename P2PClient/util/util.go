@@ -305,11 +305,15 @@ func SetFT(ft model.FileTable) {
 // PrepareFile - Prepares random file
 func PrepareFile(fileName string) error {
 	if contains(NodeFiles.FileNames, fileName) {
-		randFile := make([]byte, randomInt(2, 10)*1024*1024)
+		value := randomInt(2, 10)*1024*1024
+		randFile := make([]byte, value)
 		if _, err := os.Stat(Name); os.IsNotExist(err) {
 			os.Mkdir(Name, 0755)
 		}
 		err := ioutil.WriteFile(Name+"/"+fileName, randFile, 0755)
+		sha256 := sha256.Sum256(randFile)
+		fmt.Printf("%x\n",sha256)
+		fmt.Printf("%x\n", value/(1024*1024))
 		if err != nil {
 			return err
 		}
