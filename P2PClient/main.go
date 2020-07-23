@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -25,7 +24,7 @@ func main() {
 		Handler: router.NewRouter(),
 	}
 
-	fmt.Println("Starting TCP client at port " + util.Port)
+	log.Println("Starting TCP client at port " + util.Port)
 
 	// Continue to process new requests until an error occurs
 	log.Fatal(s.ListenAndServe())

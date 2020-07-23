@@ -78,12 +78,13 @@ func GetFileTable(w http.ResponseWriter, r *http.Request) {
 func DownloadFile(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fileName := vars["file_name"]
-	err := util.PrepareFile(fileName)
+	sha, err := util.PrepareFile(fileName)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	} else {
 		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
 		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("SHA", sha)
 		http.ServeFile(w, r, util.Name+"/"+fileName)
 	}
 }
@@ -94,12 +95,14 @@ func DownloadFileFromNetwork(w http.ResponseWriter, r *http.Request) {
 	server := vars["server"]
 	port := vars["port"]
 	fileName := vars["file_name"]
-	err := client.DownloadFileFromNetwork(server, port, fileName)
+	sha, err := client.DownloadFileFromNetwork(server, port, fileName)
+
 	if err != nil {
 		w.Write([]byte(err.Error()))
 	} else {
 		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
 		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("SHA", sha)
 		http.ServeFile(w, r, util.Name+"/"+fileName)
 	}
 

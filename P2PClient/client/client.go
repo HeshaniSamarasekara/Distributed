@@ -4,6 +4,7 @@ import (
 	"Distributed/P2PClient/model"
 	"Distributed/P2PClient/util"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -237,10 +238,10 @@ func Search(searchString string, incomingHostPort string, hopCount int) (string,
 
 	select {
 	case <-done:
-		fmt.Println("SEARCH DONE IN NETWORK")
+		log.Println("SEARCH DONE IN NETWORK")
 		return searchInNode(searchString), nil
 	case <-ctx.Done():
-		fmt.Println("TIME OUT")
+		log.Println("TIME OUT")
 		cancel()
 		cmd := " SEROK 0 " + util.IP + " " + util.Port + " 0 "
 		count := len(cmd) + 5
@@ -391,24 +392,33 @@ func AutomaticRegister() {
 }
 
 // DownloadFileFromNetwork - Download File From Network
-func DownloadFileFromNetwork(server string, port string, fileName string) error {
+func DownloadFileFromNetwork(server string, port string, fileName string) (string, error) {
 	response, err := http.Get("http://" + server + ":" + port + "/download/" + fileName)
+	filePath := util.Name + "/" + fileName
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer response.Body.Close()
+	sha := response.Header.Get("SHA")
 	if _, err := os.Stat(util.Name); os.IsNotExist(err) {
 		os.Mkdir(util.Name, 0755)
 	}
-	out, err := os.Create(util.Name + "/" + fileName)
+	out, err := os.Create(filePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, response.Body)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	newSha := util.CalculateHash(filePath)
+	if sha != newSha {
+		return "", errors.New("SHA values not matching")
+	}
+	log.Println("Hash of received file: ", sha)
+	fi, _ := os.Stat(filePath)
+	log.Println("File size of received file : ", fi.Size()/(1024*1024), "Mb")
+	return sha, nil
 }

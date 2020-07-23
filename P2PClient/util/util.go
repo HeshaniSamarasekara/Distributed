@@ -2,8 +2,11 @@ package util
 
 import (
 	"Distributed/P2PClient/model"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"flag"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -303,25 +306,23 @@ func SetFT(ft model.FileTable) {
 }
 
 // PrepareFile - Prepares random file
-func PrepareFile(fileName string) error {
+func PrepareFile(fileName string) (string, error) {
 	if contains(NodeFiles.FileNames, fileName) {
-		value := randomInt(2, 10)*1024*1024
+		value := randomInt(2, 10) * 1024 * 1024
 		randFile := make([]byte, value)
 		if _, err := os.Stat(Name); os.IsNotExist(err) {
 			os.Mkdir(Name, 0755)
 		}
 		err := ioutil.WriteFile(Name+"/"+fileName, randFile, 0755)
-		sha1 := sha256.Sum256(randFile)
-		sha := hex.EncodeToString(sha1[:])
-		fmt.Println("Hash code value is : " + sha)
-		size := strconv.Itoa(value/(1024*1024))
-		fmt.Println("file size is " + size +"Mb")
+		sha := CalculateHash(Name + "/" + fileName)
+		log.Println("Hash of sent file : " + sha)
+		log.Println("File size of sent file : ", value/(1024*1024), "Mb")
 		if err != nil {
-			return err
+			return "", err
 		}
-		return nil
+		return sha, nil
 	}
-	return errors.New("File not found")
+	return "", errors.New("File not found")
 }
 
 func contains(arr []string, str string) bool {
@@ -331,4 +332,19 @@ func contains(arr []string, str string) bool {
 		}
 	}
 	return false
+}
+
+// CalculateHash - Calculates hash value of a given file
+func CalculateHash(filePath string) string {
+	hasher := sha256.New()
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := io.Copy(hasher, f); err != nil {
+		log.Fatal(err)
+	}
+	sha := hex.EncodeToString(hasher.Sum(nil))
+	return sha
 }
