@@ -20,7 +20,7 @@ func NewRouter() *mux.Router {
 	router.HandleFunc("/routeTable", GetRouteTable).Methods("GET")
 	router.HandleFunc("/search/{file_name}", SearchFile).Methods("GET")
 	router.HandleFunc("/fileTable", GetFileTable).Methods("GET")
-	router.HandleFunc("/upload/{file_name}", UploadFile).Methods("GET")
+	router.HandleFunc("/download/{file_name}", UploadFile).Methods("GET")
 	router.HandleFunc("/download/{server}/{port}/{file_name}", DownloadFileFromNetwork).Methods("GET")
 	return router
 }
