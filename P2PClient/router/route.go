@@ -84,6 +84,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte(err.Error()))
 	} else {
+		// Unable to get incoming host :(
 		hostPort := strings.Split(r.Host, ":")
 		util.AddToFileEntryTable(hostPort[0], hostPort[1], fileName)
 		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
