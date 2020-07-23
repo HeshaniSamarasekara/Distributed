@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 
@@ -80,10 +81,11 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	fileName := vars["file_name"]
 	sha, err := util.PrepareFile(fileName)
 	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte(err.Error()))
 	} else {
-		//TODO Vimukthi
-		// util.UpdateFileEntryTable()
+		hostPort := strings.Split(r.Host, ":")
+		util.AddToFileEntryTable(hostPort[0], hostPort[1], fileName)
 		w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("SHA", sha)
@@ -100,6 +102,7 @@ func DownloadFileFromNetwork(w http.ResponseWriter, r *http.Request) {
 	sha, err := client.DownloadFileFromNetwork(server, port, fileName)
 
 	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte(err.Error()))
 	} else {
 		util.UpdateNodeFiles(fileName)
