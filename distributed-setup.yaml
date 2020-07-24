@@ -1,0 +1,395 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Distributed deployment
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Basic Configuration
+        Parameters:
+          - KeyPairName
+          - InstanceType
+    ParameterLabels:
+      KeyPairName:
+        default: Key Pair Name
+      InstanceType:
+        default: Instance Type
+
+Resources:
+  # networking configurations
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+  PublicSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.254.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+  PublicInternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+  PublicSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet1
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      GatewayId: !Ref PublicInternetGateway
+      DestinationCidrBlock: 0.0.0.0/0
+    DependsOn: VPCInternetGatewayAttachment
+  VPCInternetGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref PublicInternetGateway
+      VpcId: !Ref VPC
+  PrivateSubnet1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+  PrivateSubnetRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+  PrivateRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway
+      RouteTableId: !Ref PrivateSubnetRouteTable
+  PrivateSubnet1RouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      RouteTableId: !Ref PrivateSubnetRouteTable
+      SubnetId: !Ref PrivateSubnet1
+  NATGateway:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt
+        - EIP
+        - AllocationId
+      SubnetId: !Ref PublicSubnet1
+  BastionEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      AllocationId: !GetAtt BastionEIP.AllocationId
+      InstanceId: !Ref BastionInstance
+  EIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+  BastionEIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+
+  BastionSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  BastionInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: !FindInMap
+        - AMIRegionMap
+        - !Ref 'AWS::Region'
+        - Ubuntu1804
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: BastionInstance
+      NetworkInterfaces:
+        - DeleteOnTermination: 'true'
+          Description: Primary network interface
+          DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet1
+          GroupSet:
+            - !Ref BastionSecurityGroup
+  BootstrapServer:
+    Type: 'AWS::EC2::Instance'
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT10M
+    Properties:
+      DisableApiTermination: 'false'
+      InstanceInitiatedShutdownBehavior: stop
+      ImageId: !FindInMap
+        - BootstrapServerRegionMap
+        - !Ref 'AWS::Region'
+        - Ubuntu1804
+      InstanceType: !Ref InstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: '20'
+            VolumeType: gp2
+            DeleteOnTermination: 'true'
+      KeyName: !Ref KeyPairName
+      Monitoring: 'false'
+      Tags:
+        - Key: Name
+          Value: BootstrapServer
+      NetworkInterfaces:
+        - DeleteOnTermination: 'true'
+          Description: Primary network interface
+          DeviceIndex: 0
+          SubnetId: !Ref PrivateSubnet1
+          GroupSet:
+            - !Ref BootstrapServerSecurityGroup
+      UserData: !Base64
+        'Fn::Sub': |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+          #!/bin/bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          export PATH=~/.local/bin:$PATH
+          if [[ ${OperatingSystem} == "Ubuntu1804" ]]; then
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              sleep 300
+              killall apt apt-get dpkg
+              dpkg --configure -a
+              apt install -y python-pip
+              apt install -y unzip zip
+              apt install -y python3-pip
+              pip3 install boto3
+              pip install boto3
+          fi
+          if [[ ${OperatingSystem} == "CentOS7" ]]; then
+              wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+              yum install -y epel-release-latest-7.noarch.rpm
+              yum install -y zip unzip nfs-utils
+              yum install -y python-pip
+              pip install boto3
+          fi
+          sleep 30
+          echo "todo:start Bootstrap Server here"
+          if [[ ${OperatingSystem} == "Ubuntu1804" ]]; then
+              end=$((SECONDS+1200))
+              while [ $SECONDS -lt $end ] ; do
+                  sleep 10
+                  wget --delete-after --server-response --no-check-certificate "todo:add url here"
+                  if [ $? -eq "0" ] ; then
+                      /usr/local/bin/cfn-signal -e $? -e $? --stack ${AWS::StackName} --resource BootstrapServer --region ${AWS::Region}"
+                      break
+                  fi
+              done
+          fi
+          if [[ ${OperatingSystem} == "CentOS7" ]]; then
+              end=$((SECONDS+1200))
+              while [ $SECONDS -lt $end ] ; do
+                  sleep 10
+                  wget --delete-after --server-response --no-check-certificate "todo:add url here"
+                  if [ $? -eq "0" ] ; then
+                      /usr/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource BootstrapServer --region ${AWS::Region}"
+                      break
+                  fi
+              done
+          fi
+          echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
+          cat /dev/null > ~/.bash_history && history -c
+  BootstrapServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Bootstrap Server Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9200
+          CidrIp: 0.0.0.0/0
+  NodeLaunchConfiguration:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      ImageId: !FindInMap
+        - NodeAMIRegionMap
+        - !Ref 'AWS::Region'
+        - !Ref OperatingSystem
+      InstanceType: !Ref InstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: '20'
+            VolumeType: gp2
+            DeleteOnTermination: 'true'
+      KeyName: !Ref KeyPairName
+      SecurityGroups:
+        - !Ref SecurityGroup
+      UserData: !Base64
+        'Fn::Sub': |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+          #!/bin/bash
+          exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+          export PATH=~/.local/bin:$PATH
+          if [[ ${OperatingSystem} == "Ubuntu1804" ]]; then
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              sleep 300
+              killall apt apt-get dpkg
+              dpkg --configure -a
+              apt install -y nfs-common
+              apt install -y python-pip
+              apt install -y unzip zip
+              apt install -y python3-pip
+              pip3 install boto3
+              pip install boto3
+          fi
+          if [[ ${OperatingSystem} == "CentOS7" ]]; then
+              wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+              yum install -y epel-release-latest-7.noarch.rpm
+              yum install -y zip unzip nfs-utils
+              yum install -y python-pip
+              pip install boto3
+          fi
+          echo "wget the p2p client here"
+          sleep 30
+          if [[ ${OperatingSystem} == "Ubuntu1804" ]]; then
+              end=$((SECONDS+1200))
+              while [ $SECONDS -lt $end ] ; do
+                  sleep 10
+                  wget --delete-after --server-response --no-check-certificate "add url here:todo"
+                  if [ $? -eq "0" ] ; then
+                      /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource NodeLaunchConfiguration --region ${AWS::Region}
+                      break
+                  fi
+              done
+          fi
+          if [[ ${OperatingSystem} == "CentOS7" ]]; then
+              end=$((SECONDS+1200))
+              while [ $SECONDS -lt $end ] ; do
+                  sleep 10
+                  wget --delete-after --server-response --no-check-certificate "add url here:todo"
+                  if [ $? -eq "0" ] ; then
+                      /usr/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource NodeLaunchConfiguration --region ${AWS::Region}
+                      break
+                  fi
+              done
+          fi
+          echo 'export HISTTIMEFORMAT="%F %T "' >> /etc/profile.d/history.sh
+          cat /dev/null > ~/.bash_history && history -c
+    DependsOn:
+      - SecurityGroup
+      - VPCInternetGatewayAttachment
+      - BootstrapServer
+  NodeAutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      LaunchConfigurationName: !Ref NodeLaunchConfiguration
+      DesiredCapacity: 10
+      MinSize: 10
+      MaxSize: 20
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: Node
+          PropagateAtLaunch: 'true'
+        - Key: cluster
+          Value: P2PClientServer
+          PropagateAtLaunch: 'true'
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT30M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MaxBatchSize: '2'
+        MinInstancesInService: '1'
+        PauseTime: PT10M
+        SuspendProcesses:
+          - AlarmNotification
+        WaitOnResourceSignals: true
+Parameters:
+  KeyPairName:
+    Description: >-
+      The private key used to log in to instances through SSH
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+Mappings:
+  BootstrapServerRegionMap:
+    us-east-1:
+       Ubuntu1804: ami-addtodo
+    us-east-2:
+       Ubuntu1804: ami-addtodo
+  NodeAMIRegionMap:
+    us-east-1:
+      CentOS7: ami-addtodo
+      Ubuntu1804: ami-addtodo
+    us-east-2:
+      CentOS7: ami-addtodo
+      Ubuntu1804: ami-addtodo
