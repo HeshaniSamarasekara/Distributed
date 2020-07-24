@@ -258,7 +258,7 @@ func StoreInFT(wg *sync.WaitGroup, response model.SearchResponse) {
 		stringsToAdd := ""
 		if f.IP+":"+f.Port == response.IP+":"+response.Port {
 			for _, incoming := range response.Files {
-				if !strings.Contains(f.FileStrings, incoming) {
+				if !strings.Contains(strings.ToLower(f.FileStrings), strings.ToLower(incoming)) {
 					stringsToAdd += "," + incoming
 				}
 			}

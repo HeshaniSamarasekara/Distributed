@@ -115,7 +115,7 @@ func search(searchString string, hopCount int, incomingIP string, incomingPort s
 	resp := ""
 
 	for _, file := range util.NodeFiles.FileNames {
-		if strings.Contains(file, searchString) {
+		if strings.Contains(strings.ToLower(file), strings.ToLower(searchString)) {
 			containFiles = append(containFiles, file)
 			resp = resp + " " + strings.Join(strings.Split(file, " "), "_")
 		}
