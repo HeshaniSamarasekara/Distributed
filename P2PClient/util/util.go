@@ -375,12 +375,20 @@ func UpdateFileEntryTable(ip string, port string) {
 
 // AddToFileEntryTable - Updates file table
 func AddToFileEntryTable(ip string, port string, fileString string) {
-	localFt := GetFT()
-	ftEntry := model.FileTableEntry{}
-	ftEntry.IP = ip
-	ftEntry.Port = port
-	ftEntry.FileStrings = fileString
-	localFt.Files = append(localFt.Files, ftEntry)
-	log.Println("Adding entry to File table " + ip + ":" + port)
-	SetFT(localFt)
+	localFT := GetFT()
+	for i, f := range localFT.Files {
+		if f.IP+":"+f.Port == ip+":"+port {
+			localFT.Files[i].FileStrings += "," + fileString
+			SetFT(localFT)
+			return
+		}
+	}
+	newFileEntry := model.FileTableEntry{}
+	newFileEntry.IP = ip
+	newFileEntry.Port = port
+	newFileEntry.FileStrings = fileString
+
+	localFT.Files = append(localFT.Files, newFileEntry)
+	log.Println("Stored in FT : ", localFT)
+	SetFT(localFT)
 }

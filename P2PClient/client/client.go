@@ -375,7 +375,11 @@ func AutomaticRegister() {
 
 // DownloadFileFromNetwork - Download File From Network
 func DownloadFileFromNetwork(server string, port string, fileName string) (string, error) {
-	response, err := http.Get("http://" + server + ":" + port + "/download/" + fileName)
+	httpClient := &http.Client{}
+	r, _ := http.NewRequest("GET", "http://"+server+":"+port+"/download/"+fileName, nil)
+	r.Header.Add("HostPort", util.IP+":"+util.Port)
+	response, err := httpClient.Do(r)
+
 	filePath := util.Name + "/" + fileName
 	if response.StatusCode != 200 {
 		return "File not found", errors.New("File not found")
