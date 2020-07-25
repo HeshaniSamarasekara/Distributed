@@ -40,6 +40,8 @@ Ex:
 ```
 
 ## How to register a node in the system
+
+This command is not necessary to run. When a node starts, it automatically sends the register call to the Bootstrap server.
 Ex:
 ```
 POST http://127.0.0.1:9000/register
@@ -81,6 +83,13 @@ Ex: Harry_Potter
 Ex:
 ```
 GET http://127.0.0.1:9000/fileTable
+```
+
+## How to download File from a node
+Replace the parameters in the below command with the search result of the file needed.
+Ex:
+```
+GET http://localhost:9000/download/{server}/{port}/{file_name}
 ```
 
 ## Tested configurations
