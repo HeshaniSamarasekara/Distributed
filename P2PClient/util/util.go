@@ -307,7 +307,7 @@ func SetFT(ft model.FileTable) {
 
 // PrepareFile - Prepares random file
 func PrepareFile(fileName string) (string, error) {
-	if contains(NodeFiles.FileNames, fileName) {
+	if containsInArray(NodeFiles.FileNames, fileName) {
 		value := randomInt(2, 10) * 1024 * 1024
 		randFile := make([]byte, value)
 		if _, err := os.Stat(Name); os.IsNotExist(err) {
@@ -325,7 +325,8 @@ func PrepareFile(fileName string) (string, error) {
 	return "", errors.New("File not found")
 }
 
-func contains(arr []string, str string) bool {
+// containsInArray - Check if string is containing in array
+func containsInArray(arr []string, str string) bool {
 	for _, a := range arr {
 		if a == str {
 			return true
@@ -391,4 +392,17 @@ func AddToFileEntryTable(ip string, port string, fileString string) {
 	localFT.Files = append(localFT.Files, newFileEntry)
 	log.Println("Stored in FT : ", localFT)
 	SetFT(localFT)
+}
+
+// CountWords - Counts how many words containing in array
+func CountWords(fullFileName string, searchString string) int {
+	searchSrtWords := strings.Split(strings.ToLower(searchString), "_")
+	fileNameWords := strings.Split(fullFileName, "_")
+	count := 0
+	for i := 0; i < len(searchSrtWords); i++ {
+		if containsInArray(fileNameWords, searchSrtWords[i]) {
+			count++
+		}
+	}
+	return count
 }

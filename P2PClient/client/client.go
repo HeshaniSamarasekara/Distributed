@@ -322,7 +322,7 @@ func searchInNode(searchString string) string {
 	contains := ""
 
 	for _, file := range util.NodeFiles.FileNames {
-		if strings.Contains(strings.ToLower(file), strings.ToLower(searchString)) {
+		if len(strings.Split(searchString, "_")) == util.CountWords(strings.ToLower(file), strings.ToLower(searchString)) {
 			log.Println("File found in this node")
 			contains += file + ","
 		}
@@ -338,11 +338,11 @@ func searchInNode(searchString string) string {
 	localFt := util.GetFT()
 	if localFt.Files != nil && len(localFt.Files) > 0 {
 		for _, ftEntry := range localFt.Files {
-			if strings.Contains(strings.ToLower(ftEntry.FileStrings), strings.ToLower(searchString)) {
+			if len(strings.Split(searchString, "_")) == util.CountWords(strings.ToLower(ftEntry.FileStrings), strings.ToLower(searchString)) {
 				fileNames := strings.Split(ftEntry.FileStrings, ",")
 				correcteNames := ""
 				for _, n := range fileNames {
-					if strings.Contains(strings.ToLower(n), strings.ToLower(searchString)) {
+					if len(strings.Split(searchString, "_")) == util.CountWords(strings.ToLower(n), strings.ToLower(searchString)) {
 						correcteNames += n
 					}
 				}
