@@ -89,7 +89,18 @@ GET http://127.0.0.1:9000/fileTable
 Replace the parameters in the below command with the search result of the file needed.
 Ex:
 ```
-GET http://localhost:9000/download/{server}/{port}/{file_name}
+GET http://127.0.0.1:9000/download/{server}/{port}/{file_name}
+```
+
+## Configure the System
+
+The P2PClientServer supports setting up a hop count for searching. If the hop count exceeds at some node, the request will no longer be sent out to other nodes. Also, there is a Time To Live(TTL) for each request. The client waits until the TTL expires and if there are no responses up to that point, it will consider that the searched item is not found in the system.
+
+Both of these values can be configured in the `P2PClient/application.yaml` file. The default values are given below. After changing the values, the code needs to be recompiled.
+
+```
+ttl: 2
+hopcount: 5
 ```
 
 ## Tested configurations
