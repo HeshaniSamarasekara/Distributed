@@ -338,14 +338,14 @@ func searchInNode(searchString string) string {
 	localFt := util.GetFT()
 	if localFt.Files != nil && len(localFt.Files) > 0 {
 		for _, ftEntry := range localFt.Files {
-			if len(strings.Split(searchString, "_")) == util.CountWords(strings.ToLower(ftEntry.FileStrings), strings.ToLower(searchString)) {
-				fileNames := strings.Split(ftEntry.FileStrings, ",")
-				correcteNames := ""
-				for _, n := range fileNames {
-					if len(strings.Split(searchString, "_")) == util.CountWords(strings.ToLower(n), strings.ToLower(searchString)) {
-						correcteNames += n
-					}
+			fileNames := strings.Split(ftEntry.FileStrings, ",")
+			correcteNames := ""
+			for _, n := range fileNames {
+				if len(strings.Split(searchString, "_")) == util.CountWords(strings.ToLower(n), strings.ToLower(searchString)) {
+					correcteNames += n
 				}
+			}
+			if correcteNames != "" {
 				log.Println("File " + searchString + " can be found in " + ftEntry.IP + ":" + ftEntry.Port)
 				cmd := " SEROK " + fmt.Sprintf("%d", 1) + " " + ftEntry.IP + " " + ftEntry.Port + " 0 " + correcteNames
 				count := len(cmd) + 5
